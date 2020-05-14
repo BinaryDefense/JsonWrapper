@@ -92,19 +92,48 @@ module internal Create =
             }
             SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
+        let createSetter () =
+            let memberFlags : MemberFlags = {
+                IsInstance = true
+                IsDispatchSlot = false
+                IsOverrideOrExplicitImpl = false
+                IsFinal = false
+                MemberKind = MemberKind.PropertySet
+            }
+            SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
-        let createMember () =
 
-            let unit = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
+        let createGetSetMember (name : string) =
+            let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
+            let synTypeString = SynType.CreateLongIdent "string"
+            let varName = "x"
+            let strArg =
+                let name = LongIdentWithDots.CreateString varName
 
-            let member1 =
+                let arg =
+                    let named = SynPatRcd.CreateNamed(Ident.Create varName, SynPatRcd.CreateWild )
+                    SynPatRcd.CreateTyped(named, synTypeString)
+                    |> SynPatRcd.CreateParen
+                arg
+
+            let getMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this";"two"]) , [unit])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name]) , [unitArg])
                     ValData = createGetter ()
+                    ReturnInfo = SynBindingReturnInfoRcd.Create synTypeString  |> Some
+                    Expr = SynExpr.CreateConstString ""
                 }
 
-            member1
+            let setMember =
+                { SynBindingRcd.Null with
+                    Kind =  SynBindingKind.NormalBinding
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name]) , [strArg])
+                    ValData = createSetter ()
+                    Expr = SynExpr.CreateConst SynConst.Unit
+                }
+
+            [ getMember; setMember]
         // union SynBinding =
         // | Binding of accessibility : option<SynAccess>
             //* kind : SynBindingKind
@@ -119,7 +148,7 @@ module internal Create =
         // SynBinding
         let members = [
             SynMemberDefn.CreateImplicitCtor()
-            SynMemberDefn.CreateMember (createMember ())
+            yield! createGetSetMember ("two") |> Seq.map SynMemberDefn.CreateMember
         ]
 
         SynModuleDecl.CreateType(info, members)
@@ -219,8 +248,9 @@ module internal Create =
                 createWrapperClass
             ]
 
-            let info = SynComponentInfoRcd.Create recordId
-            SynModuleDecl.CreateNestedModule(info, declarations)
+            // let info = SynComponentInfoRcd.Create recordId
+            // SynModuleDecl.CreateNestedModule(info, declarations)
+            declarations
         | _ -> failwithf "Not a record type"
 
 
@@ -240,12 +270,12 @@ type Fields2Generator() =
                 |> List.collect (fun (ns, records) ->
                                     records
                                     |> List.filter (Ast.hasAttribute<Generator.Fields2Attribute>)
-                                    |> List.map (Create.createRecordModule ns))
+                                    |> List.collect (Create.createRecordModule ns))
 
             let namespaceOrModule =
                 {SynModuleOrNamespaceRcd.CreateNamespace(Ident.CreateLong namespace')
                     with
-                        IsRecursive = false
+                        IsRecursive = true
                         Declarations = modules }
 
             namespaceOrModule

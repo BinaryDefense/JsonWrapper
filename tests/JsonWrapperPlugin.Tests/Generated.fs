@@ -8,9 +8,10 @@ namespace rec DataSchema
 namespace rec DataSchema
 
 
-namespace DataSchema
+namespace rec DataSchema
 
-module Test1 =
-    type Test1() =
-        member this.two
-            with get () = null
+type Test1() =
+
+    member this.two
+        with get () = ""
+        and set (x: string) = ()
