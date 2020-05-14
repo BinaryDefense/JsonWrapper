@@ -10,7 +10,7 @@ namespace rec DataSchema
 
 namespace rec DataSchema
 
-type Test1() =
+type Test1(jtoken: Newtonsoft.Json.Linq.JToken) =
 
     member this.two
         with get () = ""

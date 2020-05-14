@@ -74,13 +74,14 @@ module internal Create =
     let createWrapperClass  (parent: LongIdent) (fields: SynFields) =
 
         let info = SynComponentInfoRcd.Create parent
-
-        let general :
-            SynTypeDefnSimpleReprGeneralRcd = {
-                Kind = SynTypeDefnKind.TyconClass
-                Range = range.Zero
-            }
-        let simple = SynTypeDefnSimpleReprRcd.General general
+        let jtokenIden =  "jtoken"
+        let createCtor () =
+            let ctorArgs =
+                let lol =
+                    let ssp = SynSimplePat.Id(Ident.Create jtokenIden, None, false, false, false, range.Zero)
+                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString "Newtonsoft.Json.Linq.JToken"), range.Zero )
+                SynSimplePats.SimplePats ([lol], range.Zero)
+            SynMemberDefn.ImplicitCtor(None, [],ctorArgs,None, range.Zero )
 
         let createGetter () =
             let memberFlags : MemberFlags = {
@@ -146,7 +147,7 @@ module internal Create =
             )
 
         let members = [
-            SynMemberDefn.CreateImplicitCtor()
+            createCtor ()
             yield! createGetSetMembersFromRecord ()
         ]
 
