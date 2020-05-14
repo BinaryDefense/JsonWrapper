@@ -4,7 +4,7 @@ open Myriad.Plugins
 open Newtonsoft.Json.Linq
 
 [<Generator.Fields2Attribute>]
-type Test1 = { one: int; two: string; }
+type Test1 = { two: string; }
 
 type IHaveJToken  =
     abstract member InnerData : JToken

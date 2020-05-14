@@ -103,52 +103,51 @@ module internal Create =
             SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
 
-        let createGetSetMember (name : string) =
+        let createGetSetMember (name : Ident) (ty : SynType) =
             let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
-            let synTypeString = SynType.CreateLongIdent "string"
-            let varName = "x"
-            let strArg =
-                let name = LongIdentWithDots.CreateString varName
 
+
+            let varName = "x"
+
+            let setArg =
                 let arg =
                     let named = SynPatRcd.CreateNamed(Ident.Create varName, SynPatRcd.CreateWild )
-                    SynPatRcd.CreateTyped(named, synTypeString)
+                    SynPatRcd.CreateTyped(named, ty)
                     |> SynPatRcd.CreateParen
                 arg
+
 
             let getMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name]) , [unitArg])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name.idText]) , [unitArg])
                     ValData = createGetter ()
-                    ReturnInfo = SynBindingReturnInfoRcd.Create synTypeString  |> Some
+                    ReturnInfo = SynBindingReturnInfoRcd.Create ty  |> Some
                     Expr = SynExpr.CreateConstString ""
                 }
 
             let setMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name]) , [strArg])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name.idText]) , [setArg])
                     ValData = createSetter ()
                     Expr = SynExpr.CreateConst SynConst.Unit
                 }
 
             [ getMember; setMember]
-        // union SynBinding =
-        // | Binding of accessibility : option<SynAccess>
-            //* kind : SynBindingKind
-            //* mustInline : bool
-            //* isMutable : bool
-            //* attrs : SynAttributes
-            //* xmlDoc : PreXmlDoc
-            //* valData : SynValData
-            //* headPat : SynPat
-            //* returnInfo : option<SynBindingReturnInfo>
-            //* expr : SynExpr * range : range * seqPoint : SequencePointInfoForBinding
-        // SynBinding
+            |> List.map SynMemberDefn.CreateMember
+
+        let createGetSetMembersFromRecord () =
+            fields
+            |> List.collect(fun f ->
+                let frcd = f.ToRcd
+                let fieldIdent = match frcd.Id with None -> failwith "no field name" | Some f -> f
+                createGetSetMember fieldIdent frcd.Type
+            )
+
         let members = [
             SynMemberDefn.CreateImplicitCtor()
-            yield! createGetSetMember ("two") |> Seq.map SynMemberDefn.CreateMember
+            yield! createGetSetMembersFromRecord ()
         ]
 
         SynModuleDecl.CreateType(info, members)
