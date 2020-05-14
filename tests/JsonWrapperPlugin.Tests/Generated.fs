@@ -12,5 +12,5 @@ namespace DataSchema
 
 module Test1 =
     type Test1() =
-        member two
+        member this.two
             with get () = null

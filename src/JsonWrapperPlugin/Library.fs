@@ -100,7 +100,7 @@ module internal Create =
             let member1 =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["two"]) , [unit])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this";"two"]) , [unit])
                     ValData = createGetter ()
                 }
 
