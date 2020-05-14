@@ -8,15 +8,9 @@ namespace rec DataSchema
 namespace rec DataSchema
 
 
-namespace rec DataSchema
+namespace DataSchema
 
 module Test1 =
-    open Example
-
-    let one (x: Test1) = x.one
-    let two (x: Test1) = x.two
-
-    let map (mapone: int -> int) (maptwo: string -> string) (record': Test1) =
-        { record' with
-              one = mapone record'.one
-              two = maptwo record'.two }
+    type Test1() =
+        member two
+            with get () = null

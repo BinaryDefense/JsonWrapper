@@ -71,6 +71,59 @@ module internal Create =
         let returnTypeInfo = SynBindingReturnInfoRcd.Create recordType
         SynModuleDecl.CreateLet [{SynBindingRcd.Let with Pattern = pattern; Expr = expr; ReturnInfo = Some returnTypeInfo }]
 
+    let createWrapperClass  (parent: LongIdent) (fields: SynFields) =
+
+        let info = SynComponentInfoRcd.Create parent
+
+        let general :
+            SynTypeDefnSimpleReprGeneralRcd = {
+                Kind = SynTypeDefnKind.TyconClass
+                Range = range.Zero
+            }
+        let simple = SynTypeDefnSimpleReprRcd.General general
+
+        let createGetter () =
+            let memberFlags : MemberFlags = {
+                IsInstance = true
+                IsDispatchSlot = false
+                IsOverrideOrExplicitImpl = false
+                IsFinal = false
+                MemberKind = MemberKind.PropertyGet
+            }
+            SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
+
+
+        let createMember () =
+
+            let unit = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
+
+            let member1 =
+                { SynBindingRcd.Null with
+                    Kind =  SynBindingKind.NormalBinding
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["two"]) , [unit])
+                    ValData = createGetter ()
+                }
+
+            member1
+        // union SynBinding =
+        // | Binding of accessibility : option<SynAccess>
+            //* kind : SynBindingKind
+            //* mustInline : bool
+            //* isMutable : bool
+            //* attrs : SynAttributes
+            //* xmlDoc : PreXmlDoc
+            //* valData : SynValData
+            //* headPat : SynPat
+            //* returnInfo : option<SynBindingReturnInfo>
+            //* expr : SynExpr * range : range * seqPoint : SequencePointInfoForBinding
+        // SynBinding
+        let members = [
+            SynMemberDefn.CreateImplicitCtor()
+            SynMemberDefn.CreateMember (createMember ())
+        ]
+
+        SynModuleDecl.CreateType(info, members)
+
     let createMap (recordId: LongIdent) (recordFields: SynFields) : SynModuleDecl =
         let varIdent = LongIdentWithDots.CreateString "map"
         let recordPrimeIdent =  Ident.Create "record'"
@@ -156,11 +209,15 @@ module internal Create =
 
             let map = createMap recordId recordFields
 
+            let createWrapperClass = createWrapperClass recordId recordFields
+
             let declarations = [
-                yield openParent
-                yield!fieldMaps
+                // yield openParent
+                // yield!fieldMaps
                 // yield create
-                yield map ]
+                // yield map
+                createWrapperClass
+            ]
 
             let info = SynComponentInfoRcd.Create recordId
             SynModuleDecl.CreateNestedModule(info, declarations)
@@ -188,7 +245,7 @@ type Fields2Generator() =
             let namespaceOrModule =
                 {SynModuleOrNamespaceRcd.CreateNamespace(Ident.CreateLong namespace')
                     with
-                        IsRecursive = true
+                        IsRecursive = false
                         Declarations = modules }
 
             namespaceOrModule
