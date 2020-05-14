@@ -10,8 +10,16 @@ namespace rec DataSchema
 
 namespace rec DataSchema
 
-type Test1(jtoken: Newtonsoft.Json.Linq.JToken) =
+type Test1(jtoken: Newtonsoft.Json.Linq.JToken) as this =
+
+    member this.one
+        with get () = jtoken.["one"].Value<int>()
+        and set (x: int) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     member this.two
-        with get () = ""
-        and set (x: string) = ()
+        with get () = jtoken.["two"].Value<string>()
+        and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    member this.three
+        with get () = jtoken.["three"].Value<System.Guid>()
+        and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x

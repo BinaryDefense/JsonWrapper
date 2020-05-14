@@ -72,16 +72,18 @@ module internal Create =
         SynModuleDecl.CreateLet [{SynBindingRcd.Let with Pattern = pattern; Expr = expr; ReturnInfo = Some returnTypeInfo }]
 
     let createWrapperClass  (parent: LongIdent) (fields: SynFields) =
-
+        let jtokenNamespace = "Newtonsoft.Json.Linq.JToken"
         let info = SynComponentInfoRcd.Create parent
-        let jtokenIden =  "jtoken"
+        let jtokenIdenName =  "jtoken"
+        let jtokenIdent = Ident.Create jtokenIdenName
+        let selfIden = "this"
         let createCtor () =
             let ctorArgs =
                 let lol =
-                    let ssp = SynSimplePat.Id(Ident.Create jtokenIden, None, false, false, false, range.Zero)
-                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString "Newtonsoft.Json.Linq.JToken"), range.Zero )
+                    let ssp = SynSimplePat.Id(jtokenIdent, None, false, false, false, range.Zero)
+                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenNamespace), range.Zero )
                 SynSimplePats.SimplePats ([lol], range.Zero)
-            SynMemberDefn.ImplicitCtor(None, [],ctorArgs,None, range.Zero )
+            SynMemberDefn.ImplicitCtor(None, [], ctorArgs, Some (Ident.Create selfIden), range.Zero )
 
         let createGetter () =
             let memberFlags : MemberFlags = {
@@ -104,35 +106,59 @@ module internal Create =
             SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
 
-        let createGetSetMember (name : Ident) (ty : SynType) =
+        let createGetSetMember (fieldName : Ident) (jsonFieldName : string) (ty : SynType) =
             let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
 
 
-            let varName = "x"
 
-            let setArg =
-                let arg =
-                    let named = SynPatRcd.CreateNamed(Ident.Create varName, SynPatRcd.CreateWild )
-                    SynPatRcd.CreateTyped(named, ty)
-                    |> SynPatRcd.CreateParen
-                arg
+            let getMemberExpr =
+                //Generates the jtoken.["jsonFieldName"]
+                let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
+                let jTokenAccessor = SynExpr.DotIndexedGet( SynExpr.Ident jtokenIdent, idx, range.Zero, range.Zero )
 
+                //Generates the {jtoken}.Value
+                let valueExpr = SynExpr.DotGet(jTokenAccessor, range0, LongIdentWithDots.CreateString "Value", range0)
+
+                //Generates the Generic part of {jtoken}.Value<mytype>
+                let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, [ty], [], None, range0, range0 )
+                //Generates the function call {jtoken}.Value<mytype>()
+                SynExpr.CreateApp(valueExprWithType, SynExpr.CreateConst SynConst.Unit)
 
             let getMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name.idText]) , [unitArg])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; fieldName.idText]) , [unitArg])
                     ValData = createGetter ()
-                    ReturnInfo = SynBindingReturnInfoRcd.Create ty  |> Some
-                    Expr = SynExpr.CreateConstString ""
+                    ReturnInfo = SynBindingReturnInfoRcd.Create ty |> Some
+                    Expr = getMemberExpr
                 }
+
+
+
+            let argVarName = "x"
+
+            let setArg =
+                let arg =
+                    let named = SynPatRcd.CreateNamed(Ident.Create argVarName, SynPatRcd.CreateWild )
+                    SynPatRcd.CreateTyped(named, ty)
+                    |> SynPatRcd.CreateParen
+                arg
+
+            let setMemberExpr =
+                //Generates Newtonsoft.Json.Linq.JToken.op_Implicit function
+                let jtokenOpImplicit = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString(sprintf "%s.op_Implicit" jtokenNamespace),None )
+                //Generates Newtonsoft.Json.Linq.JToken.op_Implicit x
+                let argVarExpr = SynExpr.CreateApp(jtokenOpImplicit, SynExpr.CreateIdentString argVarName)
+                //Generates the jtoken.["jsonFieldName"] <- {argVarExpr}
+                let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
+                SynExpr.DotIndexedSet( SynExpr.Ident jtokenIdent, idx,argVarExpr, range.Zero, range.Zero, range0 )
 
             let setMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create (["this"; name.idText]) , [setArg])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; fieldName.idText]) , [setArg])
                     ValData = createSetter ()
-                    Expr = SynExpr.CreateConst SynConst.Unit
+                    Expr = setMemberExpr
                 }
 
             [ getMember; setMember]
@@ -143,7 +169,7 @@ module internal Create =
             |> List.collect(fun f ->
                 let frcd = f.ToRcd
                 let fieldIdent = match frcd.Id with None -> failwith "no field name" | Some f -> f
-                createGetSetMember fieldIdent frcd.Type
+                createGetSetMember fieldIdent fieldIdent.idText frcd.Type
             )
 
         let members = [
