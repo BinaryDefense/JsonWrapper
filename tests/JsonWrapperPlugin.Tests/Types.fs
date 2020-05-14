@@ -2,13 +2,21 @@ namespace Example
 open System
 open Myriad.Plugins
 open Newtonsoft.Json.Linq
+open  Newtonsoft.Json
 
 [<Generator.Fields2Attribute>]
 type Test1 = {
     one: int
     two: string
     three : System.Guid
-    }
+}
+
+[<Generator.Fields2Attribute>]
+type Test2 = {
+    [<JsonProperty("not_one")>]
+    one: int
+    two: int
+}
 
 type IHaveJToken  =
     abstract member InnerData : JToken

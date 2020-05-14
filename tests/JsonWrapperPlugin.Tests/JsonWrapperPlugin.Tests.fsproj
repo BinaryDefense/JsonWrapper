@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
-       
+        <!-- <MyriadSdkWaitForDebugger>true</MyriadSdkWaitForDebugger> -->
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="AssemblyInfo.fs" />

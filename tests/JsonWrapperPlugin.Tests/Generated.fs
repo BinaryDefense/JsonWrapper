@@ -13,13 +13,27 @@ namespace rec DataSchema
 type Test1(jtoken: Newtonsoft.Json.Linq.JToken) as this =
 
     member this.one
-        with get () = jtoken.["one"].Value<int>()
+        with get () = jtoken.["one"].ToObject<int>()
         and set (x: int) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     member this.two
-        with get () = jtoken.["two"].Value<string>()
+        with get () = jtoken.["two"].ToObject<string>()
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     member this.three
-        with get () = jtoken.["three"].Value<System.Guid>()
+        with get () = jtoken.["three"].ToObject<System.Guid>()
         and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    interface IHaveJToken with
+
+type Test2(jtoken: Newtonsoft.Json.Linq.JToken) as this =
+
+    member this.one
+        with get () = jtoken.["not_one"].ToObject<int>()
+        and set (x: int) = jtoken.["not_one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    member this.two
+        with get () = jtoken.["two"].ToObject<int>()
+        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    interface IHaveJToken with

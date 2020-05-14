@@ -117,7 +117,7 @@ module internal Create =
                 let jTokenAccessor = SynExpr.DotIndexedGet( SynExpr.Ident jtokenIdent, idx, range.Zero, range.Zero )
 
                 //Generates the {jtoken}.Value
-                let valueExpr = SynExpr.DotGet(jTokenAccessor, range0, LongIdentWithDots.CreateString "Value", range0)
+                let valueExpr = SynExpr.DotGet(jTokenAccessor, range0, LongIdentWithDots.CreateString "ToObject", range0)
 
                 //Generates the Generic part of {jtoken}.Value<mytype>
                 let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, [ty], [], None, range0, range0 )
@@ -169,8 +169,22 @@ module internal Create =
             |> List.collect(fun f ->
                 let frcd = f.ToRcd
                 let fieldIdent = match frcd.Id with None -> failwith "no field name" | Some f -> f
-                createGetSetMember fieldIdent fieldIdent.idText frcd.Type
+
+                let jsonFieldName =
+                    // Find the JsonProperty attribute
+                    let attr =
+                        frcd.Attributes
+                        |> Seq.collect (fun a -> a.Attributes)
+                        |> Seq.tryFind(fun a ->
+                            let attrName = a.TypeName.AsString
+                            attrName.Contains "JsonProperty"
+                        )
+                    match attr |> Option.map (fun a -> a.ArgExpr) with
+                    | Some (SynExpr.Paren(SynExpr.Const(SynConst.String(suppliedJsonFieldName, _), _), _ , _, _)) -> suppliedJsonFieldName
+                    | _ -> fieldIdent.idText
+                createGetSetMember fieldIdent jsonFieldName frcd.Type
             )
+
 
         let members = [
             createCtor ()

@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [ {
+        "name": ".NET Core Attach to running process",
+        "type": "coreclr",
+        "request": "attach",
+        "processId": "${command:pickProcess}",
+        "justMyCode": false,
+        "enableStepFiltering": false,
+        "symbolOptions": {
+            "searchPaths": [
+                "http://srv.symbolsource.org/pdb/Public",
+                "http://srv.symbolsource.org/pdb/MyGet"
+            ],
+            "searchMicrosoftSymbolServer": true
+        },
+        "sourceLinkOptions": {
+            "*": {
+                "enabled": true
+            }
+        }
+    }]
+}
