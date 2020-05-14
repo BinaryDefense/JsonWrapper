@@ -2,14 +2,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>netcoreapp3.1;net461</TargetFrameworks>
+        <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+       
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="AssemblyInfo.fs" />
+        <Compile Include="Types.fs" />
+        <Compile Include="Generated.fs">
+            <MyriadFile>Types.fs</MyriadFile>
+            <MyriadNameSpace>DataSchema</MyriadNameSpace>
+        </Compile>
         <Compile Include="Tests.fs" />
         <Compile Include="Main.fs" />
     </ItemGroup>
     <ItemGroup>
+        <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../../src/JsonWrapperPlugin/bin/Debug/netstandard2.1/JsonWrapperPlugin.dll" />
         <ProjectReference Include="../../src/JsonWrapperPlugin/JsonWrapperPlugin.fsproj" />
     </ItemGroup>
     <Import Project="..\..\.paket\Paket.Restore.targets" />

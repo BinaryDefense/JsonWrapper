@@ -5,3 +5,7 @@ Microsoft.NET.Test.Sdk
 YoloDev.Expecto.TestSdk
 altcover
 Microsoft.NETFramework.ReferenceAssemblies
+Myriad.Core
+Myriad.Sdk
+Myriad.Plugins
+Newtonsoft.Json

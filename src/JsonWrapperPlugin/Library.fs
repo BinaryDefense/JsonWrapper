@@ -1,56 +1,195 @@
-namespace JsonWrapperPlugin
+namespace Myriad.Plugins
+
 open System
-open System.Security.Cryptography
-open System.Text
+open FSharp.Compiler.Ast
+open FsAst
+open Myriad.Core
 
-/// <summary> Initial module </summary>
-module Say =
+module internal Create =
+    open FSharp.Compiler.Range
 
-    /// <summary> Finite list of Colors </summary>
-    type FavoriteColor =
-    | Red
-    | Yellow
-    | Blue
+    let createFieldMap (parent: LongIdent) (field: SynField)  =
+        let field = field.ToRcd
+        let fieldName = match field.Id with None -> failwith "no field name" | Some f -> f
 
-    /// <summary> A person with many different field types </summary>
-    type Person = {
-        Name : string
-        FavoriteNumber : int
-        FavoriteColor : FavoriteColor
-        DateOfBirth : DateTimeOffset
-    }
+        let recordType =
+            LongIdentWithDots.Create (parent |> List.map (fun i -> i.idText))
+            |> SynType.CreateLongIdent
 
-    /// <summary>Says hello to a specific person</summary>
-    let helloPerson (person : Person) =
-        sprintf
-            "Hello %s. You were born on %s and your favorite number is %d. You like %A."
-            person.Name
-            (person.DateOfBirth.ToString("yyyy/MM/dd"))
-            person.FavoriteNumber
-            person.FavoriteColor
+        let varName = "x"
+        let pattern =
+            let name = LongIdentWithDots.CreateString fieldName.idText
+            let arg =
+                let named = SynPatRcd.CreateNamed(Ident.Create varName, SynPatRcd.CreateWild )
+                SynPatRcd.CreateTyped(named, recordType)
+                |> SynPatRcd.CreateParen
 
-    /// <summary>
-    /// Adds two integers <paramref name="a"/> and <paramref name="b"/> and returns the result.
-    /// </summary>
-    ///
-    /// <remarks>
-    /// This usually contains some really important information that you'll miss if you don't read the docs.
-    /// </remarks>
-    ///
-    /// <param name="a">An integer.</param>
-    /// <param name="b">An integer.</param>
-    ///
-    /// <returns>
-    /// The sum of two integers.
-    /// </returns>
-    ///
-    /// <exceptions cref="M:System.OverflowException">Thrown when one parameter is max
-    /// and the other is greater than 0.</exceptions>
-    let add a b =
-        a + b
+            SynPatRcd.CreateLongIdent(name, [arg])
+
+        let expr =
+            let ident = LongIdentWithDots.Create [varName; fieldName.idText]
+            SynExpr.CreateLongIdent(false, ident, None)
+
+        let valData =
+            let argInfo = SynArgInfo.CreateIdString "x"
+            let valInfo = SynValInfo.SynValInfo([[argInfo]], SynArgInfo.Empty)
+            SynValData.SynValData(None, valInfo, None)
+
+        SynModuleDecl.CreateLet [{SynBindingRcd.Let with
+                                    Pattern = pattern
+                                    Expr = expr
+                                    ValData = valData }]
+
+    let createCreate (parent: LongIdent) (fields: SynFields) =
+        let varIdent = LongIdentWithDots.CreateString "create"
+
+        let recordType =
+            LongIdentWithDots.Create (parent |> List.map (fun i -> i.idText))
+            |> SynType.CreateLongIdent
+
+        let pattern =
+            let arguments =
+                fields
+                |> List.map (fun f ->let field = f.ToRcd
+                                     let name = SynPatRcd.CreateNamed(field.Id.Value, SynPatRcd.CreateWild)
+                                     SynPatRcd.CreateTyped(name, field.Type) |> SynPatRcd.CreateParen)
+
+            SynPatRcd.CreateLongIdent(varIdent, arguments)
+
+        let expr =
+            let fields =
+                fields
+                |> List.map (fun f ->   let field = f.ToRcd
+                                        let fieldIdent = match field.Id with None -> failwith "no field name" | Some f -> f
+                                        let name = LongIdentWithDots.Create([fieldIdent.idText])
+                                        let ident = SynExpr.CreateIdent fieldIdent
+                                        RecordFieldName(name, true), Some ident, None)
+
+            let newRecord = SynExpr.Record(None, None, fields, range.Zero )
+            SynExpr.CreateTyped(newRecord, recordType)
+
+        let returnTypeInfo = SynBindingReturnInfoRcd.Create recordType
+        SynModuleDecl.CreateLet [{SynBindingRcd.Let with Pattern = pattern; Expr = expr; ReturnInfo = Some returnTypeInfo }]
+
+    let createMap (recordId: LongIdent) (recordFields: SynFields) : SynModuleDecl =
+        let varIdent = LongIdentWithDots.CreateString "map"
+        let recordPrimeIdent =  Ident.Create "record'"
+
+        let createFieldMapNameIdent field =
+            Ident.Create ("map" + field.Id.Value.idText)
+
+        let pattern =
+            let arguments =
+                recordFields
+                |> List.map (fun f ->let field = f.ToRcd
+                                     let fieldType = field.Type
+                                     let funType = SynType.Fun(fieldType, fieldType, range0 )
+                                     let ident = createFieldMapNameIdent field
+                                     let name = SynPatRcd.CreateNamed(ident, SynPatRcd.CreateWild)
+                                     SynPatRcd.CreateTyped(name, funType)
+                                     |> SynPatRcd.CreateParen)
+
+            let recordParam =
+                let name = SynPatRcd.CreateNamed(recordPrimeIdent, SynPatRcd.CreateWild)
+                let typ =
+                    LongIdentWithDots.Create (recordId |> List.map (fun i -> i.idText))
+                    |> SynType.CreateLongIdent
+
+                SynPatRcd.CreateTyped(name, typ)
+                |> SynPatRcd.CreateParen
+
+            let allArgs = [yield! arguments; yield recordParam]
+
+            SynPatRcd.CreateLongIdent(varIdent, allArgs)
+
+        let expr =
+            let copyInfo =
+                let blockSep = (range.Zero, None) : BlockSeparator
+                Some (SynExpr.CreateIdent recordPrimeIdent, blockSep)
+
+            let fieldUpdates =
+                let mapField (f: SynField) =
+                    let f = f.ToRcd
+                    let lid = LongIdentWithDots.Create [f.Id.Value.idText]
+                    let rfn = RecordFieldName(lid, true)
+
+                    let update =
+                        let funcExpr = SynExpr.CreateIdent (createFieldMapNameIdent f)
+                        let argExpr =
+                            let longIdentWithDots = LongIdentWithDots.Create [recordPrimeIdent.idText; f.Id.Value.idText]
+                            SynExpr.CreateLongIdent(false, longIdentWithDots, None)
+                        SynExpr.CreateApp(funcExpr, argExpr)
+
+                    rfn, Some update, (None : Option<BlockSeparator>)
+
+                let arguments =
+                    recordFields
+                    |> List.map mapField
+
+                arguments
+
+            SynExpr.Record(None, copyInfo, fieldUpdates, range.Zero )
+
+        let returnTypeInfo =
+            LongIdentWithDots.Create (recordId |> List.map (fun i -> i.idText))
+            |> SynType.CreateLongIdent
+            |> SynBindingReturnInfoRcd.Create
+
+        SynModuleDecl.CreateLet
+            [ { SynBindingRcd.Let with
+                    Pattern = pattern
+                    Expr = expr
+                    ReturnInfo = Some returnTypeInfo }
+            ]
+
+    let createRecordModule (namespaceId: LongIdent) (typeDefn: SynTypeDefn) =
+        let (TypeDefn(synComponentInfo, synTypeDefnRepr, _members, _range)) = typeDefn
+        let (ComponentInfo(_attributes, _typeParams, _constraints, recordId, _doc, _preferPostfix, _access, _range)) = synComponentInfo
+        match synTypeDefnRepr with
+        | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(_accessibility, recordFields, _recordRange), _range) ->
+
+            let openParent = SynModuleDecl.CreateOpen (LongIdentWithDots.Create (namespaceId |> List.map (fun ident -> ident.idText)))
+
+            let fieldMaps = recordFields |> List.map (createFieldMap recordId)
+
+            let create = createCreate recordId recordFields
+
+            let map = createMap recordId recordFields
+
+            let declarations = [
+                yield openParent
+                yield!fieldMaps
+                // yield create
+                yield map ]
+
+            let info = SynComponentInfoRcd.Create recordId
+            SynModuleDecl.CreateNestedModule(info, declarations)
+        | _ -> failwithf "Not a record type"
 
 
-    /// I do nothing
-    let nothing name =
-        name |> ignore
+[<RequireQualifiedAccess>]
+module Generator =
+    type Fields2Attribute() =
+        inherit Attribute()
+
+[<MyriadGenerator("fields2")>]
+type Fields2Generator() =
+
+    interface IMyriadGenerator with
+        member __.Generate(namespace', ast: ParsedInput) =
+            let namespaceAndrecords = Ast.extractRecords ast
+            let modules =
+                namespaceAndrecords
+                |> List.collect (fun (ns, records) ->
+                                    records
+                                    |> List.filter (Ast.hasAttribute<Generator.Fields2Attribute>)
+                                    |> List.map (Create.createRecordModule ns))
+
+            let namespaceOrModule =
+                {SynModuleOrNamespaceRcd.CreateNamespace(Ident.CreateLong namespace')
+                    with
+                        IsRecursive = true
+                        Declarations = modules }
+
+            namespaceOrModule
 
