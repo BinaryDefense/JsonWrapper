@@ -24,7 +24,8 @@ type Test1(jtoken: Newtonsoft.Json.Linq.JToken) as this =
         with get () = jtoken.["three"].ToObject<System.Guid>()
         and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
-    interface IHaveJToken with
+    interface Example.IHaveJToken with
+        member this.InnerData = jtoken
 
 type Test2(jtoken: Newtonsoft.Json.Linq.JToken) as this =
 
@@ -36,4 +37,5 @@ type Test2(jtoken: Newtonsoft.Json.Linq.JToken) as this =
         with get () = jtoken.["two"].ToObject<int>()
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
-    interface IHaveJToken with
+    interface Example.IHaveJToken with
+        member this.InnerData = jtoken

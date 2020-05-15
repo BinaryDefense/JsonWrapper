@@ -4,14 +4,14 @@ open Myriad.Plugins
 open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
 
-[<Generator.Fields2Attribute>]
+[<Generator.JsonWrapper>]
 type Test1 = {
     one: int
     two: string
     three : System.Guid
 }
 
-[<Generator.Fields2Attribute>]
+[<Generator.JsonWrapper>]
 type Test2 = {
     [<JsonProperty("not_one")>]
     one: int

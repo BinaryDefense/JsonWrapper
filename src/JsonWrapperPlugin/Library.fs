@@ -185,10 +185,31 @@ module internal Create =
                 createGetSetMember fieldIdent jsonFieldName frcd.Type
             )
 
+        let createInterfaceImpl () =
+            let implementedMembers =
+                let createInnerDataMemberVal  =
+                    let memberFlags : MemberFlags = {
+                        IsInstance = true
+                        IsDispatchSlot = false
+                        IsOverrideOrExplicitImpl = true
+                        IsFinal = false
+                        MemberKind = MemberKind.Member
+                    }
+                    SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
+                let bindingRecord = {
+                    SynBindingRcd.Null with
+                        ValData = createInnerDataMemberVal
+                        Pattern = SynPatRcd.CreateLongIdent (LongIdentWithDots.Create [selfIden; "InnerData"], [])
+                        Expr = SynExpr.CreateIdent jtokenIdent
+                }
+
+                [ SynMemberDefn.CreateMember(bindingRecord)]
+            SynMemberDefn.Interface(SynType.CreateLongIdent("Example.IHaveJToken"), Some implementedMembers, range0)
 
         let members = [
             createCtor ()
             yield! createGetSetMembersFromRecord ()
+            createInterfaceImpl ()
         ]
 
         SynModuleDecl.CreateType(info, members)
@@ -296,11 +317,11 @@ module internal Create =
 
 [<RequireQualifiedAccess>]
 module Generator =
-    type Fields2Attribute() =
+    type JsonWrapperAttribute() =
         inherit Attribute()
 
-[<MyriadGenerator("fields2")>]
-type Fields2Generator() =
+[<MyriadGenerator("TheAngryByrd.jsonwrapper")>]
+type JsonWrapperGenerator() =
 
     interface IMyriadGenerator with
         member __.Generate(namespace', ast: ParsedInput) =
@@ -309,7 +330,7 @@ type Fields2Generator() =
                 namespaceAndrecords
                 |> List.collect (fun (ns, records) ->
                                     records
-                                    |> List.filter (Ast.hasAttribute<Generator.Fields2Attribute>)
+                                    |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
                                     |> List.collect (Create.createRecordModule ns))
 
             let namespaceOrModule =
