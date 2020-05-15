@@ -4,22 +4,45 @@ open System
 open FSharp.Compiler.Ast
 open FsAst
 open Myriad.Core
+open FSharp.Compiler.Range
+
+
+module DSL =
+
+    let createLet leftSide rightSide continuation =
+        let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
+        let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
+        let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, SequencePointInfoForBinding.NoSequencePointAtLetBinding )
+        SynExpr.LetOrUse(false, false, [binding], continuation, range0)
+
+
 
 module internal Create =
-    open FSharp.Compiler.Range
+
+    type GetterAccessor =
+    /// The backing field can be missing on the JToken, should be used with Nullable or Option types
+    | CanBeMissing
+    /// The backing field must exist on the JToken, should be used with Nullable or Option types
+    | MustExist
 
     let createWrapperClass  (parent: LongIdent) (fields: SynFields) (jtokenInterface : string) =
         let jtokenNamespace = "Newtonsoft.Json.Linq.JToken"
+        let missingJsonFieldException = "Example.MissingJsonFieldException"
+        let missingJsonFieldExceptionIdent = LongIdentWithDots.CreateString missingJsonFieldException
         let info = SynComponentInfoRcd.Create parent
         let jtokenIdenName =  "jtoken"
         let jtokenIdent = Ident.Create jtokenIdenName
         let selfIden = "this"
+
+        let pipeRightIdent = Ident.Create "op_PipeRight"
+
         let createCtor () =
             let ctorArgs =
                 let lol =
                     let ssp = SynSimplePat.Id(jtokenIdent, None, false, false, false, range.Zero)
                     SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenNamespace), range.Zero )
                 SynSimplePats.SimplePats ([lol], range.Zero)
+
             SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
 
         let createGetter () =
@@ -43,21 +66,45 @@ module internal Create =
             SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
 
-        let createGetSetMember (fieldName : Ident) (jsonFieldName : string) (ty : SynType) =
+        let createGetSetMember (fieldName : Ident) (jsonFieldName : string) (ty : SynType) (getAccessor : GetterAccessor) =
             let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
 
             let getMemberExpr =
-                //Generates the jtoken.["jsonFieldName"]
+
+                let varName = "v"
+                let continuation =
+                    let toObjectCall =
+                        //Generates the {jtoken}.ToObject
+                        let valueExpr = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString (sprintf "%s.ToObject" varName), None)
+                        //Generates the Generic part of {jtoken}.ToObject<mytype>
+                        let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, [ty], [], None, range0, range0 )
+                        //Generates the function call {jtoken}.ToObject<mytype>()
+                        SynExpr.CreateApp(valueExprWithType, SynExpr.CreateConst SynConst.Unit)
+                    match getAccessor with
+                    | MustExist ->
+                        let ifCheck = SynExpr.CreateApp(SynExpr.CreateIdentString "isNull", SynExpr.CreateIdentString varName )
+                        let ifBody =
+                            let createException =
+                                let func = SynExpr.CreateLongIdent(false, missingJsonFieldExceptionIdent, None )
+                                let args =
+                                    let arg1 = SynExpr.CreateConst(SynConst.CreateString(jsonFieldName))
+                                    let arg2 = SynExpr.CreateIdent jtokenIdent
+                                    SynExpr.Tuple(false, [arg1; arg2], [], range0)
+                                    |> SynExpr.CreateParen
+                                SynExpr.CreateApp(func, args)
+                            SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, createException), SynExpr.CreateIdentString "raise")
+                        let existCheck = SynExpr.IfThenElse(ifCheck, ifBody, None, SequencePointInfoForBinding.NoSequencePointAtLetBinding, false, range0, range0)
+                        SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, existCheck, toObjectCall, range0)
+
+                    | CanBeMissing ->
+                        toObjectCall
+
+                let vIdent = Ident.Create varName
+                //Generates the jtoken.[{jsonFieldName}]
                 let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
                 let jTokenAccessor = SynExpr.DotIndexedGet( SynExpr.Ident jtokenIdent, idx, range.Zero, range.Zero )
-
-                //Generates the {jtoken}.Value
-                let valueExpr = SynExpr.DotGet(jTokenAccessor, range0, LongIdentWithDots.CreateString "ToObject", range0)
-
-                //Generates the Generic part of {jtoken}.Value<mytype>
-                let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, [ty], [], None, range0, range0 )
-                //Generates the function call {jtoken}.Value<mytype>()
-                SynExpr.CreateApp(valueExprWithType, SynExpr.CreateConst SynConst.Unit)
+                // Generates let v = jtoken.[{jsonFieldName}]
+                DSL.createLet vIdent jTokenAccessor continuation
 
             let getMember =
                 { SynBindingRcd.Null with
@@ -67,8 +114,6 @@ module internal Create =
                     ReturnInfo = SynBindingReturnInfoRcd.Create ty |> Some
                     Expr = getMemberExpr
                 }
-
-
 
             let argVarName = "x"
 
@@ -117,7 +162,21 @@ module internal Create =
                     match attr |> Option.map (fun a -> a.ArgExpr) with
                     | Some (SynExpr.Paren(SynExpr.Const(SynConst.String(suppliedJsonFieldName, _), _), _ , _, _)) -> suppliedJsonFieldName
                     | _ -> fieldIdent.idText
-                createGetSetMember fieldIdent jsonFieldName frcd.Type
+
+
+                let getAccessorCreation =
+                    // Find the Attribute.MustExist attribute
+                    let attr =
+                        frcd.Attributes
+                        |> Seq.collect (fun a -> a.Attributes)
+                        |> Seq.tryFind(fun a ->
+                            let attrName = a.TypeName.AsString
+                            attrName.Contains "Attribute.MustExist"
+                        )
+                    match attr with
+                    | Some _ -> GetterAccessor.MustExist
+                    | None -> GetterAccessor.CanBeMissing
+                createGetSetMember fieldIdent jsonFieldName frcd.Type getAccessorCreation
             )
 
         let createInterfaceImpl (jtokenInterface : string) =

@@ -13,15 +13,21 @@ namespace rec DataSchema
 type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
 
     member this.one
-        with get () = jtoken.["one"].ToObject<int>()
+        with get () =
+            let v = jtoken.["one"]
+            v.ToObject<int>()
         and set (x: int) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     member this.two
-        with get () = jtoken.["two"].ToObject<string>()
+        with get () =
+            let v = jtoken.["two"]
+            v.ToObject<string>()
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     member this.three
-        with get () = jtoken.["three"].ToObject<System.Guid>()
+        with get () =
+            let v = jtoken.["three"]
+            v.ToObject<System.Guid>()
         and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     interface Example.IHaveJToken with
@@ -30,11 +36,50 @@ type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
 type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
 
     member this.one
-        with get () = jtoken.["not_one"].ToObject<int>()
+        with get () =
+            let v = jtoken.["not_one"]
+            v.ToObject<int>()
         and set (x: int) = jtoken.["not_one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     member this.two
-        with get () = jtoken.["two"].ToObject<int>()
+        with get () =
+            let v = jtoken.["two"]
+            v.ToObject<int>()
+        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    interface Example.IHaveJToken with
+        member this.InnerData = jtoken
+
+type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
+
+    member this.one
+        with get () =
+            let v = jtoken.["one"]
+            v.ToObject<System.Nullable<int>>()
+        and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    member this.two
+        with get () =
+            let v = jtoken.["two"]
+            v.ToObject<int>()
+        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    interface Example.IHaveJToken with
+        member this.InnerData = jtoken
+
+type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
+
+    member this.one
+        with get () =
+            let v = jtoken.["one"]
+            if isNull v then Example.MissingJsonFieldException("one", jtoken) |> raise
+            v.ToObject<System.Nullable<int>>()
+        and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+
+    member this.two
+        with get () =
+            let v = jtoken.["two"]
+            v.ToObject<int>()
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
 
     interface Example.IHaveJToken with

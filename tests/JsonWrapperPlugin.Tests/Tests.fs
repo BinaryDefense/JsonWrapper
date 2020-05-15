@@ -62,3 +62,68 @@ let jsonPropertyTests =
             Expect.equal (jtoken.Value<int>("one")) 42 ""
             Expect.equal (jtoken.Value<int>("not_one")) 100 ""
     ]
+
+
+
+[<Tests>]
+let nullablePropertyFieldExistTests =
+    testList "Nullable Field Exists Property tests" [
+        let jsonStr =
+                """{
+                    "one": null,
+                    "two" : -1000
+                    }
+                """
+        let nullInt = (Nullable<int>())
+        let inline nullable x = Nullable<_> x
+        testCase "Gets keys supplied by user" <| fun _ ->
+            let jtoken = JToken.Parse jsonStr
+
+            let test1 = NullableFieldSchema(jtoken)
+
+            Expect.equal test1.one nullInt ""
+            Expect.equal test1.two -1000 ""
+
+        testCase "Set keys works" <| fun _ ->
+            let jtoken = JToken.Parse jsonStr
+
+            let test1 = NullableFieldSchema(jtoken)
+
+            Expect.equal test1.one nullInt ""
+            test1.one <- nullable 100
+            Expect.equal test1.one (nullable 100) ""
+            Expect.equal (jtoken.Value<Nullable<int>>("one")) (nullable 100) ""
+    ]
+
+
+
+[<Tests>]
+let nullablePropertyFieldDoesNotExistTests =
+    testList "Nullable Field Does Not Exists Property tests" [
+        let jsonStr =
+                """{
+                    "two" : -1000
+                    }
+                """
+        let nullInt = (Nullable<int>())
+        let inline nullable x = Nullable<_> x
+        testCase "Gets keys supplied by user" <| fun _ ->
+            let jtoken = JToken.Parse jsonStr
+
+            let action () =
+                let test1 = NullableMissingFieldSchema(jtoken)
+
+                Expect.equal test1.one nullInt ""
+                Expect.equal test1.two -1000 ""
+
+            Expect.throwsT<Example.MissingJsonFieldException> action ""
+
+        testCase "Set keys works" <| fun _ ->
+            let jtoken = JToken.Parse jsonStr
+
+            let test1 = NullableMissingFieldSchema(jtoken)
+
+            test1.one <- nullable 100
+            Expect.equal test1.one (nullable 100) ""
+            Expect.equal (jtoken.Value<Nullable<int>>("one")) (nullable 100) ""
+    ]
