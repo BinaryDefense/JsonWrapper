@@ -5,14 +5,14 @@ open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
 
 [<Generator.JsonWrapper>]
-type Test1 = {
+type SimpleSchema = {
     one: int
     two: string
     three : System.Guid
 }
 
 [<Generator.JsonWrapper>]
-type Test2 = {
+type DifferentBackingFieldSchema = {
     [<JsonProperty("not_one")>]
     one: int
     two: int

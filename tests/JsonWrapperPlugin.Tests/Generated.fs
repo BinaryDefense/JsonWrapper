@@ -10,7 +10,7 @@ namespace rec DataSchema
 
 namespace rec DataSchema
 
-type Test1(jtoken: Newtonsoft.Json.Linq.JToken) as this =
+type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
 
     member this.one
         with get () = jtoken.["one"].ToObject<int>()
@@ -27,7 +27,7 @@ type Test1(jtoken: Newtonsoft.Json.Linq.JToken) as this =
     interface Example.IHaveJToken with
         member this.InnerData = jtoken
 
-type Test2(jtoken: Newtonsoft.Json.Linq.JToken) as this =
+type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
 
     member this.one
         with get () = jtoken.["not_one"].ToObject<int>()

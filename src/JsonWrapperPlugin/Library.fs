@@ -20,7 +20,7 @@ module internal Create =
                     let ssp = SynSimplePat.Id(jtokenIdent, None, false, false, false, range.Zero)
                     SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenNamespace), range.Zero )
                 SynSimplePats.SimplePats ([lol], range.Zero)
-            SynMemberDefn.ImplicitCtor(None, [], ctorArgs, Some (Ident.Create selfIden), range.Zero )
+            SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
 
         let createGetter () =
             let memberFlags : MemberFlags = {
