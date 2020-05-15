@@ -4,6 +4,43 @@ open Myriad.Plugins
 open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
 
+open FSharp.Reflection
+
+module Converters =
+    /// F# options-converter
+    type OptionConverter() =
+        inherit JsonConverter()
+        let optionTy = typedefof<option<_>>
+
+        override __.CanConvert t =
+            t.IsGenericType
+            && optionTy.Equals (t.GetGenericTypeDefinition())
+
+        override __.WriteJson(writer, value, serializer) =
+            let value =
+                if isNull value then
+                    null
+                else
+                    let _,fields = FSharpValue.GetUnionFields(value, value.GetType())
+                    fields.[0]
+            serializer.Serialize(writer, value)
+
+        override __.ReadJson(reader, t, _existingValue, serializer) =
+            let innerType = t.GetGenericArguments().[0]
+
+            let innerType =
+                if innerType.IsValueType then
+                    typedefof<Nullable<_>>.MakeGenericType([| innerType |])
+                else
+                    innerType
+
+            let value = serializer.Deserialize(reader, innerType)
+            let cases = FSharpType.GetUnionCases t
+
+            if isNull value then
+                FSharpValue.MakeUnion(cases.[0], [||])
+            else
+                FSharpValue.MakeUnion(cases.[1], [|value|])
 
 type IHaveJToken  =
     abstract member InnerData : JToken
@@ -36,7 +73,7 @@ type DifferentBackingFieldSchema = {
 [<Generator.JsonWrapper>]
 type NullableFieldSchema = {
     one: System.Nullable<int>
-    two: int
+    two: string
 }
 
 
@@ -47,11 +84,11 @@ type NullableMissingFieldSchema = {
     two: int
 }
 
-// [<Generator.JsonWrapper>]
-// type OptionalFieldSchema = {
-//     one: int option
-//     two: int
-// }
+[<Generator.JsonWrapper>]
+type OptionalFieldSchema = {
+    one: int option
+    two: int
+}
 
 
 type Test1Wrapper( jtoken : JToken ) =
@@ -76,3 +113,12 @@ type Test2Wrapper( jtoken : JToken ) =
             if isNull v then MissingJsonFieldException("one", jtoken) |> raise
             v.ToObject<int>()
         and set (value : int) = jtoken.["one"] <- JToken.op_Implicit value
+
+type Test3Wrapper( jtoken : JToken, serializer: Newtonsoft.Json.JsonSerializer ) =
+
+    member this.one
+        with get () : int =
+            let v = jtoken.["one"]
+            if isNull v then MissingJsonFieldException("one", jtoken) |> raise
+            v.ToObject<int>(serializer)
+        and set (value : int) = jtoken.["one"] <- JToken.FromObject(value, serializer)

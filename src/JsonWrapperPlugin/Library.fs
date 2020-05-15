@@ -26,22 +26,28 @@ module internal Create =
     | MustExist
 
     let createWrapperClass  (parent: LongIdent) (fields: SynFields) (jtokenInterface : string) =
-        let jtokenNamespace = "Newtonsoft.Json.Linq.JToken"
+        let jtokenFullName = "Newtonsoft.Json.Linq.JToken"
+        let jsonSerializerFullName = "Newtonsoft.Json.JsonSerializer"
         let missingJsonFieldException = "Example.MissingJsonFieldException"
         let missingJsonFieldExceptionIdent = LongIdentWithDots.CreateString missingJsonFieldException
         let info = SynComponentInfoRcd.Create parent
         let jtokenIdenName =  "jtoken"
         let jtokenIdent = Ident.Create jtokenIdenName
+        let jsonSerializerName =  "serializer"
+        let jsonSerializerNameIdent = Ident.Create jsonSerializerName
         let selfIden = "this"
 
         let pipeRightIdent = Ident.Create "op_PipeRight"
 
         let createCtor () =
             let ctorArgs =
-                let lol =
+                let arg1 =
                     let ssp = SynSimplePat.Id(jtokenIdent, None, false, false, false, range.Zero)
-                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenNamespace), range.Zero )
-                SynSimplePats.SimplePats ([lol], range.Zero)
+                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenFullName), range.Zero )
+                let arg2 =
+                    let ssp = SynSimplePat.Id(jsonSerializerNameIdent, None, false, false, false, range.Zero)
+                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jsonSerializerFullName), range.Zero )
+                SynSimplePats.SimplePats ([arg1; arg2], range.Zero)
 
             SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
 
@@ -78,8 +84,9 @@ module internal Create =
                         let valueExpr = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString (sprintf "%s.ToObject" varName), None)
                         //Generates the Generic part of {jtoken}.ToObject<mytype>
                         let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, [ty], [], None, range0, range0 )
-                        //Generates the function call {jtoken}.ToObject<mytype>()
-                        SynExpr.CreateApp(valueExprWithType, SynExpr.CreateConst SynConst.Unit)
+                        //Generates the function call {jtoken}.ToObject<mytype>(serializer)
+                        let serializerArg = SynExpr.CreateIdent jsonSerializerNameIdent
+                        SynExpr.CreateApp(valueExprWithType, serializerArg)
                     match getAccessor with
                     | MustExist ->
                         let ifCheck = SynExpr.CreateApp(SynExpr.CreateIdentString "isNull", SynExpr.CreateIdentString varName )
@@ -125,13 +132,20 @@ module internal Create =
                 arg
 
             let setMemberExpr =
-                //Generates Newtonsoft.Json.Linq.JToken.op_Implicit function
-                let jtokenOpImplicit = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString(sprintf "%s.op_Implicit" jtokenNamespace),None )
-                //Generates Newtonsoft.Json.Linq.JToken.op_Implicit x
-                let argVarExpr = SynExpr.CreateApp(jtokenOpImplicit, SynExpr.CreateIdentString argVarName)
-                //Generates the jtoken.["jsonFieldName"] <- {argVarExpr}
+                //Generates Newtonsoft.Json.Linq.JToken.FromObject function
+                let fromObjectFunc =
+                    SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString(sprintf "%s.FromObject" jtokenFullName),None )
+                // Generates (x,serializer)
+                let fromObjectArgs =
+                    let arg1 = SynExpr.CreateIdentString argVarName
+                    let arg2 = SynExpr.CreateIdent jsonSerializerNameIdent
+                    SynExpr.CreateTuple([arg1; arg2])
+                    |> SynExpr.CreateParen
+                //Generates Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
+                let fromObjectFuncWithArgs = SynExpr.CreateApp(fromObjectFunc, fromObjectArgs)
+                //Generates the jtoken.["jsonFieldName"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
                 let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
-                SynExpr.DotIndexedSet( SynExpr.Ident jtokenIdent, idx,argVarExpr, range.Zero, range.Zero, range0 )
+                SynExpr.DotIndexedSet( SynExpr.Ident jtokenIdent, idx, fromObjectFuncWithArgs, range.Zero, range.Zero, range0 )
 
             let setMember =
                 { SynBindingRcd.Null with

@@ -10,77 +10,94 @@ namespace rec DataSchema
 
 namespace rec DataSchema
 
-type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
+type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
 
     member this.one
         with get () =
             let v = jtoken.["one"]
-            v.ToObject<int>()
-        and set (x: int) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<int> serializer
+        and set (x: int) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
             let v = jtoken.["two"]
-            v.ToObject<string>()
-        and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<string> serializer
+        and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.three
         with get () =
             let v = jtoken.["three"]
-            v.ToObject<System.Guid>()
-        and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<System.Guid> serializer
+        and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     interface Example.IHaveJToken with
         member this.InnerData = jtoken
 
-type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
+type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
 
     member this.one
         with get () =
             let v = jtoken.["not_one"]
-            v.ToObject<int>()
-        and set (x: int) = jtoken.["not_one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<int> serializer
+        and set (x: int) = jtoken.["not_one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
             let v = jtoken.["two"]
-            v.ToObject<int>()
-        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<int> serializer
+        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     interface Example.IHaveJToken with
         member this.InnerData = jtoken
 
-type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
+type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
 
     member this.one
         with get () =
             let v = jtoken.["one"]
-            v.ToObject<System.Nullable<int>>()
-        and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<System.Nullable<int>> serializer
+        and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
             let v = jtoken.["two"]
-            v.ToObject<int>()
-        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<string> serializer
+        and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     interface Example.IHaveJToken with
         member this.InnerData = jtoken
 
-type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken) =
+type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
 
     member this.one
         with get () =
             let v = jtoken.["one"]
             if isNull v then Example.MissingJsonFieldException("one", jtoken) |> raise
-            v.ToObject<System.Nullable<int>>()
-        and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<System.Nullable<int>> serializer
+        and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
             let v = jtoken.["two"]
-            v.ToObject<int>()
-        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.op_Implicit x
+            v.ToObject<int> serializer
+        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
+
+    interface Example.IHaveJToken with
+        member this.InnerData = jtoken
+
+type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+
+    member this.one
+        with get () =
+            let v = jtoken.["one"]
+            v.ToObject<int option> serializer
+        and set (x: int option) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
+
+    member this.two
+        with get () =
+            let v = jtoken.["two"]
+            v.ToObject<int> serializer
+        and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     interface Example.IHaveJToken with
         member this.InnerData = jtoken
