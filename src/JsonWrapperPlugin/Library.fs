@@ -9,12 +9,22 @@ open FSharp.Compiler.Range
 
 module DSL =
 
-    let createLet leftSide rightSide continuation =
+    /// Creates a let {{leftSide}} = {{rightSide}}
+    let createLetAssignment leftSide rightSide continuation =
         let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
         let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
         let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, SequencePointInfoForBinding.NoSequencePointAtLetBinding )
         SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
+    /// Creates type MyClass({{ctorArgs}})
+    let createCtor (ctorArgs : SynSimplePat list) =
+        let ctorArgs = SynSimplePats.SimplePats(ctorArgs, range0)
+        SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
+
+    /// Creates {{ident}} : {{ty}}
+    let createTypedCtorArg ident ty =
+        let ssp = SynSimplePat.Id(ident, None, false, false, false, range.Zero)
+        SynSimplePat.Typed(ssp, ty, range.Zero )
 
 
 module internal Create =
@@ -27,7 +37,9 @@ module internal Create =
 
     let createWrapperClass  (parent: LongIdent) (fields: SynFields) (jtokenInterface : string) =
         let jtokenFullName = "Newtonsoft.Json.Linq.JToken"
+        let jtokenFullNameLongIdent = LongIdentWithDots.CreateString jtokenFullName
         let jsonSerializerFullName = "Newtonsoft.Json.JsonSerializer"
+        let jsonSerializerFullNameLongIdent = LongIdentWithDots.CreateString  jsonSerializerFullName
         let missingJsonFieldException = "Example.MissingJsonFieldException"
         let missingJsonFieldExceptionIdent = LongIdentWithDots.CreateString missingJsonFieldException
         let info = SynComponentInfoRcd.Create parent
@@ -40,16 +52,11 @@ module internal Create =
         let pipeRightIdent = Ident.Create "op_PipeRight"
 
         let createCtor () =
-            let ctorArgs =
-                let arg1 =
-                    let ssp = SynSimplePat.Id(jtokenIdent, None, false, false, false, range.Zero)
-                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenFullName), range.Zero )
-                let arg2 =
-                    let ssp = SynSimplePat.Id(jsonSerializerNameIdent, None, false, false, false, range.Zero)
-                    SynSimplePat.Typed(ssp, SynType.CreateLongIdent(LongIdentWithDots.CreateString jsonSerializerFullName), range.Zero )
-                SynSimplePats.SimplePats ([arg1; arg2], range.Zero)
-
-            SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
+            let arg1 =
+                DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent jtokenFullNameLongIdent)
+            let arg2 =
+                DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
+            DSL.createCtor [arg1; arg2;]
 
         let createGetter () =
             let memberFlags : MemberFlags = {
@@ -111,7 +118,7 @@ module internal Create =
                 let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
                 let jTokenAccessor = SynExpr.DotIndexedGet( SynExpr.Ident jtokenIdent, idx, range.Zero, range.Zero )
                 // Generates let v = jtoken.[{jsonFieldName}]
-                DSL.createLet vIdent jTokenAccessor continuation
+                DSL.createLetAssignment vIdent jTokenAccessor continuation
 
             let getMember =
                 { SynBindingRcd.Null with

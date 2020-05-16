@@ -30,7 +30,7 @@ type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Js
             v.ToObject<System.Guid> serializer
         and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
@@ -52,7 +52,7 @@ type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer
             v.ToObject<int> serializer
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
@@ -74,7 +74,7 @@ type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
             v.ToObject<string> serializer
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
@@ -97,7 +97,7 @@ type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer:
             v.ToObject<int> serializer
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
@@ -119,7 +119,7 @@ type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
             v.ToObject<int> serializer
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
@@ -141,7 +141,7 @@ type InnerType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
             v.ToObject<string> serializer
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
@@ -157,7 +157,7 @@ type OuterType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
             v.ToObject<InnerType> serializer
         and set (x: InnerType) = jtoken.["foo"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
-    override this.Equals(o: obj) =
+    member this.Equals(o: obj) =
         match o with
         | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
