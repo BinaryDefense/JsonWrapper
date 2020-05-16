@@ -89,7 +89,7 @@ module internal Create =
 
             let getMemberExpr =
 
-                let varName = "v"
+                let varName = "selectedToken"
                 let continuation =
                      //Generates the function call {jtoken}.ToObject<mytype>(serializer)
                     let toObjectCall =
