@@ -9,7 +9,9 @@ open FSharp.Compiler.Range
 
 module DSL =
 
-    /// Creates a let {{leftSide}} = {{rightSide}}
+    /// Creates : let {{leftSide}} = {{rightSide}}
+    ///
+     /// A more concrete example: let myVar = "something"
     let createLetAssignment leftSide rightSide continuation =
         let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
         let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
@@ -22,10 +24,15 @@ module DSL =
         SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
 
     /// Creates {{ident}} : {{ty}}
+    ///
+    /// A more concrete example : jtoken : JToken
     let createTypedCtorArg ident ``type`` =
         let ssp = SynSimplePat.Id(ident, None, false, false, false, range.Zero)
         SynSimplePat.Typed(ssp, ``type``, range.Zero )
 
+    /// Creates {{instanceAndMethod}}<{{types}}>({{args}})
+    ///
+    /// A more concrete example would be jtoken.ToObject<int>(serializer)
     let createGenericInstanceMethodCall instanceAndMethod types args =
         //Generates the methodCall {jtoken}.ToObject
         let valueExpr = SynExpr.CreateLongIdent(false, instanceAndMethod, None)
@@ -33,6 +40,33 @@ module DSL =
         let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, types, [], None, range0, range0 )
         //Generates the function call {jtoken}.ToObject<mytype>(serializer)
         SynExpr.CreateApp(valueExprWithType, args)
+
+
+    let pipeRightIdent = Ident.Create "op_PipeRight"
+
+    let pipeRight synExpr2 synExpr1 =
+        SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, synExpr1), synExpr2)
+
+    let sequentialExpressions exprs =
+        let seqExpr expr1 expr2 = SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, expr1, expr2, range0)
+        let rec inner exprs state =
+            match state, exprs with
+            | None, [] -> SynExpr.CreateConst SynConst.Unit
+            | Some expr, [] -> expr
+            | None, [single] -> single
+            | None, [one;two] -> seqExpr one two
+            | Some exp, [single] -> seqExpr exp single
+            | None, head::shoulders::tail ->
+                seqExpr head shoulders
+                |> Some
+                |> inner tail
+            | Some expr, head::tail ->
+                seqExpr expr head
+                |> Some
+                |> inner tail
+        inner exprs None
+
+        // SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, existCheck, toObjectCall, range0)
 
 module internal Create =
 
@@ -56,7 +90,6 @@ module internal Create =
         let jsonSerializerNameIdent = Ident.Create jsonSerializerName
         let selfIden = "this"
 
-        let pipeRightIdent = Ident.Create "op_PipeRight"
 
         let createCtor () =
             let arg1 = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent jtokenFullNameLongIdent)
@@ -109,9 +142,14 @@ module internal Create =
                                     SynExpr.Tuple(false, [arg1; arg2], [], range0)
                                     |> SynExpr.CreateParen
                                 SynExpr.CreateApp(func, args)
-                            SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, createException), SynExpr.CreateIdentString "raise")
+                            createException |> DSL.pipeRight (SynExpr.CreateIdentString "raise")
+                            // SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, createException), SynExpr.CreateIdentString "raise")
                         let existCheck = SynExpr.IfThenElse(ifCheck, ifBody, None, SequencePointInfoForBinding.NoSequencePointAtLetBinding, false, range0, range0)
-                        SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, existCheck, toObjectCall, range0)
+                        DSL.sequentialExpressions [
+                            existCheck
+                            toObjectCall
+                        ]
+                        // SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, existCheck, toObjectCall, range0)
 
                     | CanBeMissing ->
                         toObjectCall

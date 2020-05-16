@@ -14,20 +14,20 @@ type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Js
 
     member this.one
         with get () =
-            let v = jtoken.["one"]
-            v.ToObject<int> serializer
+            let selectedToken = jtoken.["one"]
+            selectedToken.ToObject<int> serializer
         and set (x: int) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
-            let v = jtoken.["two"]
-            v.ToObject<string> serializer
+            let selectedToken = jtoken.["two"]
+            selectedToken.ToObject<string> serializer
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.three
         with get () =
-            let v = jtoken.["three"]
-            v.ToObject<System.Guid> serializer
+            let selectedToken = jtoken.["three"]
+            selectedToken.ToObject<System.Guid> serializer
         and set (x: System.Guid) = jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
@@ -42,14 +42,14 @@ type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer
 
     member this.one
         with get () =
-            let v = jtoken.["not_one"]
-            v.ToObject<int> serializer
+            let selectedToken = jtoken.["not_one"]
+            selectedToken.ToObject<int> serializer
         and set (x: int) = jtoken.["not_one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
-            let v = jtoken.["two"]
-            v.ToObject<int> serializer
+            let selectedToken = jtoken.["two"]
+            selectedToken.ToObject<int> serializer
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
@@ -64,14 +64,14 @@ type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
 
     member this.one
         with get () =
-            let v = jtoken.["one"]
-            v.ToObject<System.Nullable<int>> serializer
+            let selectedToken = jtoken.["one"]
+            selectedToken.ToObject<System.Nullable<int>> serializer
         and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
-            let v = jtoken.["two"]
-            v.ToObject<string> serializer
+            let selectedToken = jtoken.["two"]
+            selectedToken.ToObject<string> serializer
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
@@ -86,15 +86,15 @@ type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer:
 
     member this.one
         with get () =
-            let v = jtoken.["one"]
-            if isNull v then Example.MissingJsonFieldException("one", jtoken) |> raise
-            v.ToObject<System.Nullable<int>> serializer
+            let selectedToken = jtoken.["one"]
+            if isNull selectedToken then Example.MissingJsonFieldException("one", jtoken) |> raise
+            selectedToken.ToObject<System.Nullable<int>> serializer
         and set (x: System.Nullable<int>) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
-            let v = jtoken.["two"]
-            v.ToObject<int> serializer
+            let selectedToken = jtoken.["two"]
+            selectedToken.ToObject<int> serializer
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
@@ -109,14 +109,14 @@ type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
 
     member this.one
         with get () =
-            let v = jtoken.["one"]
-            v.ToObject<int option> serializer
+            let selectedToken = jtoken.["one"]
+            selectedToken.ToObject<int option> serializer
         and set (x: int option) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
-            let v = jtoken.["two"]
-            v.ToObject<int> serializer
+            let selectedToken = jtoken.["two"]
+            selectedToken.ToObject<int> serializer
         and set (x: int) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
@@ -131,14 +131,14 @@ type InnerType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
 
     member this.one
         with get () =
-            let v = jtoken.["one"]
-            v.ToObject<int option> serializer
+            let selectedToken = jtoken.["one"]
+            selectedToken.ToObject<int option> serializer
         and set (x: int option) = jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.two
         with get () =
-            let v = jtoken.["two"]
-            v.ToObject<string> serializer
+            let selectedToken = jtoken.["two"]
+            selectedToken.ToObject<string> serializer
         and set (x: string) = jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
@@ -153,8 +153,8 @@ type OuterType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
 
     member this.foo
         with get () =
-            let v = jtoken.["foo"]
-            v.ToObject<InnerType> serializer
+            let selectedToken = jtoken.["foo"]
+            selectedToken.ToObject<InnerType> serializer
         and set (x: InnerType) = jtoken.["foo"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
 
     member this.Equals(o: obj) =
