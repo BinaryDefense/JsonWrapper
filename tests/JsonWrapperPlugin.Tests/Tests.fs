@@ -15,6 +15,7 @@ let scrubDefaultDUConverter (s: System.Collections.Generic.IList<JsonConverter>)
 // Serializer Settings
 // If you change any of these, you need to decide if they also need to be applied to the Marten configurations. (see Server/Collection boostrapping)
 let converters: JsonConverter [] = [|
+    Example.Converters.IHaveJTokenConverter()
     Example.Converters.OptionConverter()
     |]
 
@@ -184,4 +185,40 @@ let optionPropertyTests =
             test1.one <- Some 100
             Expect.equal test1.one (Some 100) ""
             Expect.equal (jtoken.["one"].ToObject<_>(looseSerializer)) (Some 100) ""
+    ]
+
+
+
+[<Tests>]
+let traversalTests =
+    testList "traversal tests" [
+        let innerJsonStr =
+            """ {
+                "one" : null,
+                "two" : -1000
+                }
+            """
+        let jsonStr =
+                """{
+                    "foo" : {
+                        "one" : null,
+                        "two" : -1000
+                        }
+                    }
+                """
+        testCase "Gets keys supplied by user" <| fun _ ->
+            let outerJToken = JToken.Parse jsonStr
+
+            let outer = OuterType(outerJToken, looseSerializer)
+
+            let innerJToken = JToken.Parse innerJsonStr
+            let innerExpected = InnerType(innerJToken, looseSerializer)
+            let innerActual = outer.foo
+
+            Expect.equal innerActual.one innerExpected.one ""
+            Expect.equal innerActual.two innerExpected.two ""
+
+            Expect.equal innerActual innerExpected ""
+            // Expect.equal test1.two -1000 ""
+
     ]

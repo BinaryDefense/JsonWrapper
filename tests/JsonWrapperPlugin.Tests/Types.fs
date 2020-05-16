@@ -5,8 +5,31 @@ open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
 
 open FSharp.Reflection
+open System.Reflection
+
+
+type IHaveJToken  =
+    abstract member InnerData : JToken
 
 module Converters =
+
+    type IHaveJTokenConverter() =
+        inherit JsonConverter()
+        override __.CanConvert t =
+            typeof<IHaveJToken>.IsAssignableFrom(t)
+
+        override __.WriteJson(writer, value, serializer) =
+            match value with
+            | :? IHaveJToken as it -> serializer.Serialize(writer, it.InnerData)
+            | _ -> InvalidCastException("Did not implement type IHaveJToken") |> raise
+
+        override __.ReadJson(reader, t, _existingValue, serializer) =
+            let jtoken = JToken.ReadFrom reader
+            let ctor = t.GetConstructor([|typeof<JToken>; typeof<JsonSerializer>|])
+            ctor.Invoke([|
+                jtoken
+                serializer
+            |])
     /// F# options-converter
     type OptionConverter() =
         inherit JsonConverter()
@@ -41,9 +64,6 @@ module Converters =
                 FSharpValue.MakeUnion(cases.[0], [||])
             else
                 FSharpValue.MakeUnion(cases.[1], [|value|])
-
-type IHaveJToken  =
-    abstract member InnerData : JToken
 
 [<RequireQualifiedAccess>]
 module Attribute =
@@ -91,6 +111,17 @@ type OptionalFieldSchema = {
 }
 
 
+[<Generator.JsonWrapper>]
+type InnerType = {
+    one: int option
+    two: string
+}
+
+[<Generator.JsonWrapper>]
+type OuterType = {
+    foo: InnerType
+}
+
 type Test1Wrapper( jtoken : JToken ) =
 
     member this.one
@@ -122,3 +153,7 @@ type Test3Wrapper( jtoken : JToken, serializer: Newtonsoft.Json.JsonSerializer )
             if isNull v then MissingJsonFieldException("one", jtoken) |> raise
             v.ToObject<int>(serializer)
         and set (value : int) = jtoken.["one"] <- JToken.FromObject(value, serializer)
+    override this.Equals(o : obj) =
+        match o with
+        | :? IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+        | _ -> false

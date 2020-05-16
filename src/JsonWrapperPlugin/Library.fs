@@ -193,7 +193,55 @@ module internal Create =
                 createGetSetMember fieldIdent jsonFieldName frcd.Type getAccessorCreation
             )
 
-        let createInterfaceImpl (jtokenInterface : string) =
+        //TODO: Currently bugged, does not produce an override even with IsOverrideOrExplicitImpl set to true
+        let createOverrideEquals =
+            let arg1VarName = "o"
+            let arg1VarNameIdent = Ident.Create arg1VarName
+
+            let matchStatement =
+                let clause1 =
+                    let aliasedName = "it"
+                    let aliasedNameIdent = Ident.Create "it"
+                    let leftSide =
+                        let castedToInteface = SynPat.IsInst(SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenInterface), range0)
+                        SynPat.Named (castedToInteface, aliasedNameIdent,false, None, range0)
+                    let rightSide =
+                        let deepEqualFunc = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString (sprintf "%s.DeepEquals" jtokenFullName), None)
+                        let deepEqualArgs =
+                            let arg1 = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString(sprintf "%s.InnerData" aliasedName), None )
+                            let arg2 = SynExpr.CreateIdentString jtokenIdenName
+                            SynExpr.CreateTuple([arg1; arg2])
+                            |> SynExpr.CreateParen
+                        SynExpr.CreateApp(deepEqualFunc, deepEqualArgs)
+                    SynMatchClause.Clause(leftSide, None, rightSide, range0, SequencePointInfoForTarget.SequencePointAtTarget)
+                let clause2 =
+                    SynMatchClause.Clause(SynPat.Wild range0, None, SynExpr.CreateConst (SynConst.Bool(false)), range0, SequencePointInfoForTarget.SequencePointAtTarget)
+                SynExpr.Match(SequencePointInfoForBinding.NoSequencePointAtLetBinding, SynExpr.CreateIdent arg1VarNameIdent, [clause1; clause2], range0)
+            let memberFlags : MemberFlags = {
+                IsInstance = true
+                IsDispatchSlot = false
+                IsOverrideOrExplicitImpl = true
+                IsFinal = false
+                MemberKind = MemberKind.Member
+            }
+            let valData = SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
+            let equalArg =
+                let arg =
+                    let named = SynPatRcd.CreateNamed(arg1VarNameIdent, SynPatRcd.CreateWild )
+                    SynPatRcd.CreateTyped(named, SynType.CreateLongIdent "obj")
+                    |> SynPatRcd.CreateParen
+                arg
+            let equalMember =
+                { SynBindingRcd.Null with
+                    Kind =  SynBindingKind.NormalBinding
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; "Equals"]) , [equalArg])
+                    ValData = valData
+                    Expr = matchStatement
+                }
+            equalMember
+            |> SynMemberDefn.CreateMember
+
+        let createInterfaceImpl =
             let implementedMembers =
                 let createInnerDataMemberVal  =
                     let memberFlags : MemberFlags = {
@@ -217,7 +265,8 @@ module internal Create =
         let members = [
             createCtor ()
             yield! createGetSetMembersFromRecord ()
-            createInterfaceImpl jtokenInterface
+            createOverrideEquals
+            createInterfaceImpl
         ]
 
         SynModuleDecl.CreateType(info, members)
