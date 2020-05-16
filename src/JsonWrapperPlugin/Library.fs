@@ -22,10 +22,17 @@ module DSL =
         SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
 
     /// Creates {{ident}} : {{ty}}
-    let createTypedCtorArg ident ty =
+    let createTypedCtorArg ident ``type`` =
         let ssp = SynSimplePat.Id(ident, None, false, false, false, range.Zero)
-        SynSimplePat.Typed(ssp, ty, range.Zero )
+        SynSimplePat.Typed(ssp, ``type``, range.Zero )
 
+    let createGenericInstanceMethodCall instanceAndMethod types args =
+        //Generates the methodCall {jtoken}.ToObject
+        let valueExpr = SynExpr.CreateLongIdent(false, instanceAndMethod, None)
+        //Generates the Generic part of {jtoken}.ToObject<mytype>
+        let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, types, [], None, range0, range0 )
+        //Generates the function call {jtoken}.ToObject<mytype>(serializer)
+        SynExpr.CreateApp(valueExprWithType, args)
 
 module internal Create =
 
@@ -52,10 +59,8 @@ module internal Create =
         let pipeRightIdent = Ident.Create "op_PipeRight"
 
         let createCtor () =
-            let arg1 =
-                DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent jtokenFullNameLongIdent)
-            let arg2 =
-                DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
+            let arg1 = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent jtokenFullNameLongIdent)
+            let arg2 = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
             DSL.createCtor [arg1; arg2;]
 
         let createGetter () =
@@ -79,21 +84,19 @@ module internal Create =
             SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
 
-        let createGetSetMember (fieldName : Ident) (jsonFieldName : string) (ty : SynType) (getAccessor : GetterAccessor) =
+        let createGetSetMember (fieldName : Ident) (jsonFieldName : string) (fieldTy : SynType) (getAccessor : GetterAccessor) =
             let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
 
             let getMemberExpr =
 
                 let varName = "v"
                 let continuation =
+                     //Generates the function call {jtoken}.ToObject<mytype>(serializer)
                     let toObjectCall =
-                        //Generates the {jtoken}.ToObject
-                        let valueExpr = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString (sprintf "%s.ToObject" varName), None)
-                        //Generates the Generic part of {jtoken}.ToObject<mytype>
-                        let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, [ty], [], None, range0, range0 )
-                        //Generates the function call {jtoken}.ToObject<mytype>(serializer)
-                        let serializerArg = SynExpr.CreateIdent jsonSerializerNameIdent
-                        SynExpr.CreateApp(valueExprWithType, serializerArg)
+                        let instanceAndMethod =  LongIdentWithDots.CreateString (sprintf "%s.ToObject" varName)
+                        let args =  SynExpr.CreateIdent jsonSerializerNameIdent
+                        DSL.createGenericInstanceMethodCall instanceAndMethod [fieldTy] args
+
                     match getAccessor with
                     | MustExist ->
                         let ifCheck = SynExpr.CreateApp(SynExpr.CreateIdentString "isNull", SynExpr.CreateIdentString varName )
@@ -125,7 +128,7 @@ module internal Create =
                     Kind =  SynBindingKind.NormalBinding
                     Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; fieldName.idText]) , [unitArg])
                     ValData = createGetter ()
-                    ReturnInfo = SynBindingReturnInfoRcd.Create ty |> Some
+                    ReturnInfo = SynBindingReturnInfoRcd.Create fieldTy |> Some
                     Expr = getMemberExpr
                 }
 
@@ -134,7 +137,7 @@ module internal Create =
             let setArg =
                 let arg =
                     let named = SynPatRcd.CreateNamed(Ident.Create argVarName, SynPatRcd.CreateWild )
-                    SynPatRcd.CreateTyped(named, ty)
+                    SynPatRcd.CreateTyped(named, fieldTy)
                     |> SynPatRcd.CreateParen
                 arg
 
