@@ -13,7 +13,7 @@ nuget Myriad.Core
 nuget Myriad.Sdk
 nuget Myriad.Plugins
 nuget Newtonsoft.Json
-nuget fsharp.compiler.service 34.1.0
+nuget fsharp.compiler.service
 
 
 // [ FAKE GROUP ]

@@ -1,10 +1,12 @@
 namespace Myriad.Plugins
 
 open System
-open FSharp.Compiler.Ast
+open FSharp.Compiler
+open FSharp.Compiler.SyntaxTree
 open FsAst
 open Myriad.Core
 open FSharp.Compiler.Range
+open FSharp.Compiler.XmlDoc
 
 
 module DSL =
@@ -15,7 +17,7 @@ module DSL =
     let createLetAssignment leftSide rightSide continuation =
         let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
         let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
-        let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, SequencePointInfoForBinding.NoSequencePointAtLetBinding )
+        let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
         SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
     /// Creates type MyClass({{ctorArgs}})
@@ -50,7 +52,7 @@ module DSL =
 
     /// Creates: expr1; expr2; ... exprN
     let sequentialExpressions exprs =
-        let seqExpr expr1 expr2 = SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, expr1, expr2, range0)
+        let seqExpr expr1 expr2 = SynExpr.Sequential(DebugPointAtSequential.Both, false, expr1, expr2, range0)
         let rec inner exprs state =
             match state, exprs with
             | None, [] -> SynExpr.CreateConst SynConst.Unit
@@ -76,7 +78,7 @@ module internal Create =
     /// The backing field must exist on the JToken, should be used with Nullable or Option types
     | MustExist
 
-    let createWrapperClass  (parent: LongIdent) (fields: SynFields) (jtokenInterface : string) =
+    let createWrapperClass  (parent: LongIdent) (fields: SynField list) (jtokenInterface : string) =
         let jtokenFullName = "Newtonsoft.Json.Linq.JToken"
         let jtokenFullNameLongIdent = LongIdentWithDots.CreateString jtokenFullName
         let jsonSerializerFullName = "Newtonsoft.Json.JsonSerializer"
@@ -143,7 +145,7 @@ module internal Create =
                                     |> SynExpr.CreateParen
                                 SynExpr.CreateApp(func, args)
                             createException |> DSL.pipeRight (SynExpr.CreateIdentString "raise")
-                        let existCheck = SynExpr.IfThenElse(ifCheck, ifBody, None, SequencePointInfoForBinding.NoSequencePointAtLetBinding, false, range0, range0)
+                        let existCheck = SynExpr.IfThenElse(ifCheck, ifBody, None, DebugPointForBinding.DebugPointAtBinding range0, false, range0, range0)
                         DSL.sequentialExpressions [
                             existCheck
                             toObjectCall
@@ -259,10 +261,10 @@ module internal Create =
                             SynExpr.CreateTuple([arg1; arg2])
                             |> SynExpr.CreateParen
                         SynExpr.CreateApp(deepEqualFunc, deepEqualArgs)
-                    SynMatchClause.Clause(leftSide, None, rightSide, range0, SequencePointInfoForTarget.SequencePointAtTarget)
+                    SynMatchClause.Clause(leftSide, None, rightSide, range0, DebugPointForTarget.Yes)
                 let clause2 =
-                    SynMatchClause.Clause(SynPat.Wild range0, None, SynExpr.CreateConst (SynConst.Bool(false)), range0, SequencePointInfoForTarget.SequencePointAtTarget)
-                SynExpr.Match(SequencePointInfoForBinding.NoSequencePointAtLetBinding, SynExpr.CreateIdent arg1VarNameIdent, [clause1; clause2], range0)
+                    SynMatchClause.Clause(SynPat.Wild range0, None, SynExpr.CreateConst (SynConst.Bool(false)), range0, DebugPointForTarget.Yes)
+                SynExpr.Match(DebugPointForBinding.DebugPointAtBinding range0, SynExpr.CreateIdent arg1VarNameIdent, [clause1; clause2], range0)
             let memberFlags : MemberFlags = {
                 IsInstance = true
                 IsDispatchSlot = false
