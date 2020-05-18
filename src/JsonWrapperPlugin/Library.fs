@@ -44,9 +44,11 @@ module DSL =
 
     let pipeRightIdent = Ident.Create "op_PipeRight"
 
+    // Creates : {{synExpr1}} |> {{synExpr2}}
     let pipeRight synExpr2 synExpr1 =
         SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, synExpr1), synExpr2)
 
+    /// Creates: expr1; expr2; ... exprN
     let sequentialExpressions exprs =
         let seqExpr expr1 expr2 = SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, expr1, expr2, range0)
         let rec inner exprs state =
@@ -65,8 +67,6 @@ module DSL =
                 |> Some
                 |> inner tail
         inner exprs None
-
-        // SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, existCheck, toObjectCall, range0)
 
 module internal Create =
 
@@ -143,13 +143,11 @@ module internal Create =
                                     |> SynExpr.CreateParen
                                 SynExpr.CreateApp(func, args)
                             createException |> DSL.pipeRight (SynExpr.CreateIdentString "raise")
-                            // SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, createException), SynExpr.CreateIdentString "raise")
                         let existCheck = SynExpr.IfThenElse(ifCheck, ifBody, None, SequencePointInfoForBinding.NoSequencePointAtLetBinding, false, range0, range0)
                         DSL.sequentialExpressions [
                             existCheck
                             toObjectCall
                         ]
-                        // SynExpr.Sequential(SequencePointInfoForSeq.SequencePointsAtSeq, false, existCheck, toObjectCall, range0)
 
                     | CanBeMissing ->
                         toObjectCall
@@ -170,7 +168,7 @@ module internal Create =
                     Expr = getMemberExpr
                 }
 
-            let argVarName = "x"
+            let argVarName = "newValue"
 
             let setArg =
                 let arg =
