@@ -11,6 +11,19 @@ open FSharp.Compiler.XmlDoc
 
 module DSL =
 
+    /// Creates : arg1, arg2... argN
+    let createTuple args =
+        SynExpr.Tuple(false, args, [], range0)
+
+
+    /// Creates : (arg1, arg2... argN0
+    let createParenedTuple args =
+        createTuple args
+        |> SynExpr.CreateParen
+
+    let createIfThenElse ifCheck ifBody elseBody =
+        SynExpr.IfThenElse(ifCheck, ifBody, elseBody, DebugPointForBinding.DebugPointAtBinding range0, false, range0, range0)
+
     /// Creates : let {{leftSide}} = {{rightSide}}
     ///
      /// A more concrete example: let myVar = "something"
@@ -141,11 +154,10 @@ module internal Create =
                                 let args =
                                     let arg1 = SynExpr.CreateConst(SynConst.CreateString(jsonFieldName))
                                     let arg2 = SynExpr.CreateIdent jtokenIdent
-                                    SynExpr.Tuple(false, [arg1; arg2], [], range0)
-                                    |> SynExpr.CreateParen
+                                    DSL.createParenedTuple [arg1; arg2]
                                 SynExpr.CreateApp(func, args)
                             createException |> DSL.pipeRight (SynExpr.CreateIdentString "raise")
-                        let existCheck = SynExpr.IfThenElse(ifCheck, ifBody, None, DebugPointForBinding.DebugPointAtBinding range0, false, range0, range0)
+                        let existCheck = DSL.createIfThenElse ifCheck ifBody None
                         DSL.sequentialExpressions [
                             existCheck
                             toObjectCall
@@ -241,15 +253,14 @@ module internal Create =
                 createGetSetMember fieldIdent jsonFieldName frcd.Type getAccessorCreation
             )
 
-        //TODO: Currently bugged, does not produce an override even with IsOverrideOrExplicitImpl set to true
         let createOverrideEquals =
-            let arg1VarName = "o"
+            let arg1VarName = "objToCompare"
             let arg1VarNameIdent = Ident.Create arg1VarName
 
             let matchStatement =
                 let clause1 =
-                    let aliasedName = "it"
-                    let aliasedNameIdent = Ident.Create "it"
+                    let aliasedName = "jTokenToCompare"
+                    let aliasedNameIdent = Ident.Create aliasedName
                     let leftSide =
                         let castedToInteface = SynPat.IsInst(SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenInterface), range0)
                         SynPat.Named (castedToInteface, aliasedNameIdent,false, None, range0)
