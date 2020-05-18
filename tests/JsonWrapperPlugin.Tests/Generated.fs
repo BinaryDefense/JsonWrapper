@@ -32,9 +32,12 @@ type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Js
         and set (newValue: System.Guid) =
             jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with
@@ -55,9 +58,12 @@ type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer
         and set (newValue: int) =
             jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with
@@ -78,9 +84,12 @@ type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
         and set (newValue: string) =
             jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with
@@ -104,9 +113,12 @@ type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer:
         and set (newValue: int) =
             jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with
@@ -127,9 +139,12 @@ type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
         and set (newValue: int) =
             jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with
@@ -150,9 +165,12 @@ type InnerType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
         and set (newValue: string) =
             jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with
@@ -166,9 +184,12 @@ type OuterType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
         and set (newValue: InnerType) =
             jtoken.["foo"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
 
-    override this.Equals(o: obj) =
-        match o with
-        | :? Example.IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? Example.IHaveJToken as jTokenToCompare ->
+            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     interface Example.IHaveJToken with

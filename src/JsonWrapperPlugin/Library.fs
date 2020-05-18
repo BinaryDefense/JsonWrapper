@@ -45,6 +45,11 @@ module DSL =
         let ssp = SynSimplePat.Id(ident, None, false, false, false, range.Zero)
         SynSimplePat.Typed(ssp, ``type``, range.Zero )
 
+    let createInstanceMethodCall instanceAndMethod args =
+        let valueExpr = SynExpr.CreateLongIdent(false, instanceAndMethod, None)
+        SynExpr.CreateApp(valueExpr, args)
+
+
     /// Creates {{instanceAndMethod}}<{{types}}>({{args}})
     ///
     /// A more concrete example would be jtoken.ToObject<int>(serializer)
@@ -104,6 +109,7 @@ module internal Create =
         let jsonSerializerName =  "serializer"
         let jsonSerializerNameIdent = Ident.Create jsonSerializerName
         let selfIden = "this"
+        let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
 
 
         let createCtor () =
@@ -133,7 +139,6 @@ module internal Create =
 
 
         let createGetSetMember (fieldName : Ident) (jsonFieldName : string) (fieldTy : SynType) (getAccessor : GetterAccessor) =
-            let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
 
             let getMemberExpr =
 
@@ -253,6 +258,29 @@ module internal Create =
                 createGetSetMember fieldIdent jsonFieldName frcd.Type getAccessorCreation
             )
 
+        let createOverrideGetHashCode =
+            let body =
+                let instanceAndCall = LongIdentWithDots.Create [jtokenIdenName.ToString(); "GetHashCode"]
+                DSL.createInstanceMethodCall instanceAndCall (SynExpr.CreateConst SynConst.Unit)
+
+            let memberFlags : MemberFlags = {
+                IsInstance = true
+                IsDispatchSlot = false
+                IsOverrideOrExplicitImpl = true
+                IsFinal = false
+                MemberKind = MemberKind.Member
+            }
+            let valData = SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
+            let getHashCodeMember =
+                { SynBindingRcd.Null with
+                    Kind =  SynBindingKind.NormalBinding
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; "GetHashCode"]) , [unitArg])
+                    ValData = valData
+                    Expr = body
+                }
+            getHashCodeMember
+            |> SynMemberDefn.CreateMember
+
         let createOverrideEquals =
             let arg1VarName = "objToCompare"
             let arg1VarNameIdent = Ident.Create arg1VarName
@@ -324,6 +352,7 @@ module internal Create =
         let members = [
             createCtor ()
             yield! createGetSetMembersFromRecord ()
+            createOverrideGetHashCode
             createOverrideEquals
             createInterfaceImpl
         ]
