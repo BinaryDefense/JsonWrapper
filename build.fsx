@@ -425,14 +425,30 @@ let fsharpAnalyzers ctx =
         dotnet.fsharpAnalyzer id args
     )
 
+let dotnetPublish ctx =
+
+    let publish proj =
+        DotNet.publish(fun c ->
+            { c with
+                Configuration = configuration (ctx.Context.AllExecutingTargets)
+            }) proj
+
+    !! srcGlob
+    |> Seq.iter publish
+
+
+
 let dotnetTest ctx =
+
+    // dotnetPublish ctx
+
     let excludeCoverage =
         !! testsGlob
         |> Seq.map IO.Path.GetFileNameWithoutExtension
         |> String.concat "|"
     let args =
         [
-            "--no-build"
+            // "--no-build"
             sprintf "/p:AltCover=%b" (not disableCodeCoverage)
             sprintf "/p:AltCoverThreshold=%d" coverageThresholdPercent
             sprintf "/p:AltCoverAssemblyExcludeFilter=%s" excludeCoverage
@@ -659,7 +675,7 @@ Target.create "DotnetRestore" dotnetRestore
 Target.create "UpdateChangelog" updateChangelog
 Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this in the dependency chain
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
-Target.create "DotnetBuild" dotnetBuild
+Target.create "DotnetBuild" dotnetPublish
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
 Target.create "GenerateCoverageReport" generateCoverageReport
@@ -683,7 +699,7 @@ Target.create "ReleaseDocs" releaseDocs
 
 // Only call Clean if DotnetPack was in the call chain
 // Ensure Clean is called before DotnetRestore
-"Clean" ?=> "DotnetRestore"
+"Clean" ==> "DotnetRestore"
 "Clean" ==> "DotnetPack"
 
 // Only call GenerateAssemblyInfo if Publish was in the call chain
@@ -708,7 +724,7 @@ Target.create "ReleaseDocs" releaseDocs
 
 "DotnetRestore"
     ==> "DotnetBuild"
-    ==> "FSharpAnalyzers"
+    // ==> "FSharpAnalyzers"
     ==> "DotnetTest"
     =?> ("GenerateCoverageReport", not disableCodeCoverage)
     ==> "DotnetPack"

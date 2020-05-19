@@ -16,7 +16,9 @@
         <Compile Include="Main.fs" />
     </ItemGroup>
     <ItemGroup>
-        <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../../src/JsonWrapperPlugin/bin/Debug/netstandard2.1/JsonWrapperPlugin.dll" />
+        <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../../src/JsonWrapperPlugin/bin/$(Configuration)/netstandard2.1/publish/JsonWrapperPlugin.dll" />
+        <!-- <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../../src/JsonWrapperPlugin/bin/$(Configuration)/netstandard2.1/publish/JsonWrapperPlugin.dll" /> -->
+        <!-- <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/bin/$(Configuration)/netcoreapp3.1/publish/JsonWrapperPlugin.dll" /> -->
         <ProjectReference Include="../../src/JsonWrapperPlugin/JsonWrapperPlugin.fsproj" />
     </ItemGroup>
     <Import Project="..\..\.paket\Paket.Restore.targets" />
