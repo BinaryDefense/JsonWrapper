@@ -222,3 +222,24 @@ let traversalTests =
             // Expect.equal test1.two -1000 ""
 
     ]
+
+
+[<Tests>]
+let deconstructTests =
+    testList "deconstruct schema" [
+        let jsonStr =
+            """{
+                "one": 42,
+                "two": "Hitchhikers Guide",
+                "three": "f971a6c0-ed00-46e5-b657-3fea2e368ba9"
+                }
+            """
+        testCase "Can match on key" <| fun _ ->
+            let jtoken = JToken.Parse jsonStr
+
+            let test1 = SimpleSchema(jtoken, looseSerializer)
+            let foo = System.Guid.Parse("f971a6c0-ed00-46e5-b657-3fea2e368ba9")
+            match test1.Deconstruct() with
+            | (42, "Hitchhikers Guide", foo) -> ()
+            | fallthru -> failwithf "Couldn't match %A" fallthru
+    ]

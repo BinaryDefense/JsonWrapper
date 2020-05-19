@@ -39,12 +39,11 @@ module DSL =
 
     /// Creates : let {{leftSide}} = {{rightSide}}
     ///
-     /// A more concrete example: let myVar = "something"
+    /// A more concrete example: let myVar = "something"
     let createLetAssignment leftSide rightSide continuation =
-        let xml = PreXmlDoc.Create ["Hi i'm a comment"]
         let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
         let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
-        let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], xml, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
+        let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
         SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
     /// Creates type MyClass({{ctorArgs}})
@@ -377,11 +376,74 @@ module internal Create =
                 [ SynMemberDefn.CreateMember(bindingRecord)]
             SynMemberDefn.Interface(SynType.CreateLongIdent(jtokenInterface), Some implementedMembers, range0)
 
+        /// Allows for pattern matching against properties
+        let createDeconstruct =
+
+            let memberArgs =
+                let arg argName fieldTy =
+                    let named = SynPatRcd.CreateNamed(Ident.Create argName, SynPatRcd.CreateWild )
+                    let typ = SynType.CreateApp(SynType.CreateLongIdent "outref", [fieldTy], false )
+                    SynPatRcd.CreateTyped(named, typ)
+
+                fields
+                |> Seq.map(fun f ->
+                    let rcd = f.ToRcd
+                    let x = rcd.Id |> Option.get
+                    let rcd = arg x.idText rcd.Type
+                    let attribute : SynAttribute= {
+                        AppliesToGetterAndSetter = false
+                        ArgExpr = SynExpr.CreateConst SynConst.Unit
+                        SynAttribute.TypeName = LongIdentWithDots.CreateString "System.Runtime.InteropServices.Out"
+                        SynAttribute.Target = None
+                        SynAttribute.Range = range0
+
+                    }
+                    let attrs : SynAttributeList = { Attributes = [attribute]; Range = range0}
+                    let attrs = SynAttributes.Cons(attrs, SynAttributes.Empty)
+
+                    // SynPatRcd.CreateAttrib(rcd, attrs)
+                    rcd
+                )
+                |> Seq.toList
+                |> SynPatRcd.CreateTuple
+                |> SynPatRcd.CreateParen
+                |> List.singleton
+            let createInnerDataMemberVal  =
+                    let memberFlags : MemberFlags = {
+                        IsInstance = true
+                        IsDispatchSlot = false
+                        IsOverrideOrExplicitImpl = false
+                        IsFinal = false
+                        MemberKind = MemberKind.Member
+                    }
+                    SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
+            let body =
+                fields
+                |> List.map(fun f ->
+                    let rcd = f.ToRcd
+                    let ident = rcd.Id |> Option.get
+                    let fieldName = string ident
+                    let rightside = SynExpr.CreateLongIdent(false,LongIdentWithDots.Create [selfIden; fieldName ], None)
+                    SynExpr.LongIdentSet (LongIdentWithDots.CreateString fieldName, rightside, range0 )
+                )
+                |> DSL.sequentialExpressions
+
+            let bindingRecord = {
+                    SynBindingRcd.Null with
+                        ValData = createInnerDataMemberVal
+                        Pattern = SynPatRcd.CreateLongIdent (LongIdentWithDots.Create [selfIden; "Deconstruct"], memberArgs)
+                        Expr = body
+                        XmlDoc = PreXmlDoc.Create ["This allows the class to be pattern matched against"]
+                }
+
+            SynMemberDefn.CreateMember(bindingRecord)
+
         let members = [
             createCtor ()
             yield! createGetSetMembersFromRecord ()
             createOverrideGetHashCode
             createOverrideEquals
+            createDeconstruct
             createInterfaceImpl
         ]
 

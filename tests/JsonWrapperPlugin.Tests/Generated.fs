@@ -46,6 +46,12 @@ type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Js
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(one: outref<int>, two: outref<string>, three: outref<System.Guid>) =
+        one <- this.one
+        two <- this.two
+        three <- this.three
+
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
 
@@ -76,6 +82,11 @@ type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(one: outref<int>, two: outref<int>) =
+        one <- this.one
+        two <- this.two
+
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
 
@@ -105,6 +116,11 @@ type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
         | :? Example.IHaveJToken as jTokenToCompare ->
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
+
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(one: outref<System.Nullable<int>>, two: outref<string>) =
+        one <- this.one
+        two <- this.two
 
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
@@ -139,6 +155,11 @@ type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer:
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(one: outref<System.Nullable<int>>, two: outref<int>) =
+        one <- this.one
+        two <- this.two
+
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
 
@@ -168,6 +189,11 @@ type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
         | :? Example.IHaveJToken as jTokenToCompare ->
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
+
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(one: outref<int option>, two: outref<int>) =
+        one <- this.one
+        two <- this.two
 
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
@@ -199,6 +225,11 @@ type InnerType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(one: outref<int option>, two: outref<string>) =
+        one <- this.one
+        two <- this.two
+
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
 
@@ -219,6 +250,9 @@ type OuterType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
         | :? Example.IHaveJToken as jTokenToCompare ->
             Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
+
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(foo: outref<InnerType>) = foo <- this.foo
 
     interface Example.IHaveJToken with
         override this.InnerData = jtoken
