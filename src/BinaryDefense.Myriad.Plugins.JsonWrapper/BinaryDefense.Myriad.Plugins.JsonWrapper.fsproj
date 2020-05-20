@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
-    <Title>JsonWrapperPlugin</Title>
+    <Title>BinaryDefense.Myriad.Plugins.JsonWrapper</Title>
     <Description>JsonWrapperPlugin does the thing!</Description>
 
   </PropertyGroup>

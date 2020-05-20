@@ -17,13 +17,12 @@
         <Compile Include="Main.fs" />
     </ItemGroup>
     <ItemGroup>
-        <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../../src/JsonWrapperPlugin/bin/$(Configuration)/netstandard2.1/publish/JsonWrapperPlugin.dll" />
-        <!-- <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../../src/JsonWrapperPlugin/bin/$(Configuration)/netstandard2.1/publish/JsonWrapperPlugin.dll" /> -->
-        <!-- <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/bin/$(Configuration)/netcoreapp3.1/publish/JsonWrapperPlugin.dll" /> -->
-        <ProjectReference Include="../../src/JsonWrapperPlugin/JsonWrapperPlugin.fsproj" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\src\BinaryDefense.JsonWrapper.Core\BinaryDefense.JsonWrapper.Core.fsproj" />
+        <ProjectReference Include="../../src/BinaryDefense.Myriad.Plugins.JsonWrapper/BinaryDefense.Myriad.Plugins.JsonWrapper.fsproj" />
+        <ProjectReference Include="..\..\src\BinaryDefense.JsonWrapper.Core\BinaryDefense.JsonWrapper.Core.fsproj" />
     </ItemGroup>
     <Import Project="..\..\.paket\Paket.Restore.targets" />
+
+    <Import Project="..\..\src\BinaryDefense.Myriad.Plugins.JsonWrapper\build\BinaryDefense.Myriad.Plugins.JsonWrapper.InTest.props" />
 </Project>
