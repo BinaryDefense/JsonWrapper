@@ -14,6 +14,7 @@ nuget Myriad.Sdk
 nuget Myriad.Plugins
 nuget Newtonsoft.Json
 nuget fsharp.compiler.service
+github baronfel/Newtonsoft.Json.FSharp.Idiomatic src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs
 
 
 // [ FAKE GROUP ]

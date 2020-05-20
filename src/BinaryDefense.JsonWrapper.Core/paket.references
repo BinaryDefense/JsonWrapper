@@ -1,0 +1,6 @@
+FSharp.Core
+Microsoft.SourceLink.GitHub
+Microsoft.NETFramework.ReferenceAssemblies
+Newtonsoft.Json
+
+File: Newtonsoft.Json.FSharp.Idiomatic.fs

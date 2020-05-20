@@ -5,6 +5,7 @@ open Expecto
 open DataSchema
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
+open BinaryDefense.JsonWrapper.Core
 
 
 let scrubDefaultDUConverter (s: System.Collections.Generic.IList<JsonConverter>) =
@@ -14,10 +15,7 @@ let scrubDefaultDUConverter (s: System.Collections.Generic.IList<JsonConverter>)
 
 // Serializer Settings
 // If you change any of these, you need to decide if they also need to be applied to the Marten configurations. (see Server/Collection boostrapping)
-let converters: JsonConverter [] = [|
-    Example.Converters.IHaveJTokenConverter()
-    Example.Converters.OptionConverter()
-    |]
+let converters = Converters.recommendedConverters
 
 let serializationSettings requireAllProps =
     let s = JsonSerializerSettings()
@@ -59,6 +57,15 @@ let simpleTests =
             test1.one <- 100
             Expect.equal test1.one 100 ""
             Expect.equal (jtoken.Value<int>("one")) 100 ""
+
+        testCase "Deconstruct" <| fun _ ->
+            let jtoken = JToken.Parse jsonStr
+
+            let test1 = SimpleSchema(jtoken, looseSerializer)
+            let foo = System.Guid.Parse("f971a6c0-ed00-46e5-b657-3fea2e368ba9")
+            match test1.Deconstruct() with
+            | (42, "Hitchhikers Guide", foo) -> ()
+            | fallthru -> failwithf "Couldn't match %A" fallthru
     ]
 
 [<Tests>]
@@ -144,7 +151,7 @@ let nullablePropertyFieldDoesNotExistTests =
                 Expect.equal test1.one nullInt ""
                 Expect.equal test1.two -1000 ""
 
-            Expect.throwsT<Example.MissingJsonFieldException> action ""
+            Expect.throwsT<MissingJsonFieldException> action ""
 
         testCase "Set keys works" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
@@ -195,17 +202,15 @@ let traversalTests =
         let innerJsonStr =
             """ {
                 "one" : null,
-                "two" : -1000
+                "two" : "-1000"
                 }
             """
         let jsonStr =
-                """{
-                    "foo" : {
-                        "one" : null,
-                        "two" : -1000
-                        }
-                    }
-                """
+                sprintf """{
+                    "foo" : %s,
+                    "count" : 10
+                }
+                """ innerJsonStr
         testCase "Gets keys supplied by user" <| fun _ ->
             let outerJToken = JToken.Parse jsonStr
 
@@ -221,25 +226,14 @@ let traversalTests =
             Expect.equal innerActual innerExpected ""
             // Expect.equal test1.two -1000 ""
 
-    ]
+        testCase "Deconstruct" <| fun _ ->
+            let outerJToken = JToken.Parse jsonStr
 
-
-[<Tests>]
-let deconstructTests =
-    testList "deconstruct schema" [
-        let jsonStr =
-            """{
-                "one": 42,
-                "two": "Hitchhikers Guide",
-                "three": "f971a6c0-ed00-46e5-b657-3fea2e368ba9"
-                }
-            """
-        testCase "Can match on key" <| fun _ ->
-            let jtoken = JToken.Parse jsonStr
-
-            let test1 = SimpleSchema(jtoken, looseSerializer)
+            let outer = OuterType(outerJToken, looseSerializer)
             let foo = System.Guid.Parse("f971a6c0-ed00-46e5-b657-3fea2e368ba9")
-            match test1.Deconstruct() with
-            | (42, "Hitchhikers Guide", foo) -> ()
+            match outer.Deconstruct() with
+            | (inner, 10) -> ()
             | fallthru -> failwithf "Couldn't match %A" fallthru
     ]
+
+

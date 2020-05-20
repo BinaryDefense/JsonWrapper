@@ -10,40 +10,37 @@ namespace rec DataSchema
 
 namespace rec DataSchema
 
-type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+open Newtonsoft.Json.Linq
+open Newtonsoft.Json
+open BinaryDefense.JsonWrapper.Core
+
+type SimpleSchema(jtoken: JToken, serializer: JsonSerializer) =
     member this.one
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["one"]
-
             selectedToken.ToObject<int> serializer
         and set (newValue: int) =
-            jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
     member this.two
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["two"]
-
             selectedToken.ToObject<string> serializer
         and set (newValue: string) =
-            jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
     member this.three
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["three"]
-
             selectedToken.ToObject<System.Guid> serializer
         and set (newValue: System.Guid) =
-            jtoken.["three"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["three"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
@@ -52,34 +49,29 @@ type SimpleSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Js
         two <- this.two
         three <- this.three
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken
 
-type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+type DifferentBackingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
     member this.one
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["not_one"]
-
             selectedToken.ToObject<int> serializer
         and set (newValue: int) =
-            jtoken.["not_one"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["not_one"] <- JToken.FromObject(newValue, serializer)
 
     member this.two
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["two"]
-
             selectedToken.ToObject<int> serializer
         and set (newValue: int) =
-            jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
@@ -87,34 +79,29 @@ type DifferentBackingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer
         one <- this.one
         two <- this.two
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken
 
-type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+type NullableFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
     member this.one
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["one"]
-
             selectedToken.ToObject<System.Nullable<int>> serializer
         and set (newValue: System.Nullable<int>) =
-            jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
     member this.two
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["two"]
-
             selectedToken.ToObject<string> serializer
         and set (newValue: string) =
-            jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
@@ -122,37 +109,31 @@ type NullableFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
         one <- this.one
         two <- this.two
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken
 
-type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+type NullableMissingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
     member this.one
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["one"]
-
-            if isNull selectedToken then
-                Example.MissingJsonFieldException("one", jtoken)
-                |> raise
+            if isNull selectedToken
+            then MissingJsonFieldException("one", jtoken) |> raise
             selectedToken.ToObject<System.Nullable<int>> serializer
         and set (newValue: System.Nullable<int>) =
-            jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
     member this.two
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["two"]
-
             selectedToken.ToObject<int> serializer
         and set (newValue: int) =
-            jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
@@ -160,34 +141,29 @@ type NullableMissingFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer:
         one <- this.one
         two <- this.two
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken
 
-type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+type OptionalFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
     member this.one
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["one"]
-
             selectedToken.ToObject<int option> serializer
         and set (newValue: int option) =
-            jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
     member this.two
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["two"]
-
             selectedToken.ToObject<int> serializer
         and set (newValue: int) =
-            jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
@@ -195,34 +171,29 @@ type OptionalFieldSchema(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newton
         one <- this.one
         two <- this.two
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken
 
-type InnerType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+type InnerType(jtoken: JToken, serializer: JsonSerializer) =
     member this.one
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["one"]
-
             selectedToken.ToObject<int option> serializer
         and set (newValue: int option) =
-            jtoken.["one"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
     member this.two
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["two"]
-
             selectedToken.ToObject<string> serializer
         and set (newValue: string) =
-            jtoken.["two"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
@@ -230,29 +201,35 @@ type InnerType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.
         one <- this.one
         two <- this.two
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken
 
-type OuterType(jtoken: Newtonsoft.Json.Linq.JToken, serializer: Newtonsoft.Json.JsonSerializer) =
+type OuterType(jtoken: JToken, serializer: JsonSerializer) =
     member this.foo
         with get () =
-            ///Hi i'm a comment
             let selectedToken = jtoken.["foo"]
-
             selectedToken.ToObject<InnerType> serializer
         and set (newValue: InnerType) =
-            jtoken.["foo"] <- Newtonsoft.Json.Linq.JToken.FromObject(newValue, serializer)
+            jtoken.["foo"] <- JToken.FromObject(newValue, serializer)
+
+    member this.count
+        with get () =
+            let selectedToken = jtoken.["count"]
+            selectedToken.ToObject<int> serializer
+        and set (newValue: int) =
+            jtoken.["count"] <- JToken.FromObject(newValue, serializer)
 
     override this.GetHashCode () = jtoken.GetHashCode()
 
     override this.Equals(objToCompare: obj) =
         match objToCompare with
-        | :? Example.IHaveJToken as jTokenToCompare ->
-            Newtonsoft.Json.Linq.JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(foo: outref<InnerType>) = foo <- this.foo
+    member this.Deconstruct(foo: outref<InnerType>, count: outref<int>) =
+        foo <- this.foo
+        count <- this.count
 
-    interface Example.IHaveJToken with
+    interface IHaveJToken with
         override this.InnerData = jtoken

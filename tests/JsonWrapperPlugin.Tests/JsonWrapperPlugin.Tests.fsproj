@@ -22,5 +22,8 @@
         <!-- <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/bin/$(Configuration)/netcoreapp3.1/publish/JsonWrapperPlugin.dll" /> -->
         <ProjectReference Include="../../src/JsonWrapperPlugin/JsonWrapperPlugin.fsproj" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\BinaryDefense.JsonWrapper.Core\BinaryDefense.JsonWrapper.Core.fsproj" />
+    </ItemGroup>
     <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

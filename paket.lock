@@ -772,7 +772,9 @@ NUGET
       FSharp.Core (>= 4.3.4) - restriction: || (>= net461) (>= netcoreapp2.0)
       System.Collections.Immutable (>= 1.4) - restriction: || (>= net461) (>= netcoreapp2.0)
       System.ValueTuple (>= 4.4) - restriction: >= net461
-
+GITHUB
+  remote: baronfel/Newtonsoft.Json.FSharp.Idiomatic
+    src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs (abe8185653e06893623dd3a39b353afc226fa703)
 GROUP Analyzers
 NUGET
   remote: https://www.nuget.org/api/v2

@@ -7,7 +7,9 @@ open FsAst
 open Myriad.Core
 open FSharp.Compiler.Range
 open FSharp.Compiler.XmlDoc
-
+open BinaryDefense.JsonWrapper.Core
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
 
 module DSL =
 
@@ -22,6 +24,9 @@ module DSL =
       match e with
       | Lambda (_, Call (_, mi, _)) -> mi.Name
       | _ -> failwith "%A is not a valid getMethodName expression, expected Lamba(_ Call(_, _, _))"
+
+    let openNamespace (``namespace`` : LongIdentWithDots) =
+        SynModuleDecl.CreateOpen (``namespace``)
 
 
     /// Creates : arg1, arg2... argN
@@ -103,8 +108,7 @@ module DSL =
 
 module JToken =
     let fullName =
-        typeof<Newtonsoft.Json.Linq.JToken>.FullName
-        // "Newtonsoft.Json.Linq.JToken"
+        typeof<Newtonsoft.Json.Linq.JToken>.Name
     let fullNameLongIdent = LongIdentWithDots.CreateString fullName
 
     let private toObjectMethod =
@@ -125,9 +129,9 @@ module internal Create =
 
     let createWrapperClass  (parent: LongIdent) (fields: SynField list) (jtokenInterface : string) =
 
-        let jsonSerializerFullName = "Newtonsoft.Json.JsonSerializer"
+        let jsonSerializerFullName = typeof<JsonSerializer>.Name
         let jsonSerializerFullNameLongIdent = LongIdentWithDots.CreateString  jsonSerializerFullName
-        let missingJsonFieldException = "Example.MissingJsonFieldException"
+        let missingJsonFieldException = typeof<MissingJsonFieldException>.Name
         let missingJsonFieldExceptionIdent = LongIdentWithDots.CreateString missingJsonFieldException
         let info = SynComponentInfoRcd.Create parent
         let jtokenIdenName =  "jtoken"
@@ -277,7 +281,7 @@ module internal Create =
                         |> Seq.collect (fun a -> a.Attributes)
                         |> Seq.tryFind(fun a ->
                             let attrName = a.TypeName.AsString
-                            attrName.Contains "Attribute.MustExist"
+                            attrName.Contains (typeof<Attributes.MustExist>.Name)
                         )
                     match attr with
                     | Some _ -> GetterAccessor.MustExist
@@ -454,7 +458,7 @@ module internal Create =
         let (TypeDefn(synComponentInfo, synTypeDefnRepr, _members, _range)) = typeDefn
         let (ComponentInfo(_attributes, _typeParams, _constraints, recordId, _doc, _preferPostfix, _access, _range)) = synComponentInfo
 
-        let jtokenInferface = "Example.IHaveJToken" //TODO: Scan and get fully qualified
+        let jtokenInferface = "IHaveJToken" //TODO: Scan and get fully qualified
         match synTypeDefnRepr with
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(_accessibility, recordFields, _recordRange), _range) ->
 
@@ -486,11 +490,22 @@ type JsonWrapperGenerator() =
                                     |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
                                     |> List.collect (Create.createRecordModule ns))
 
+
+
+            let openNamespaces = [
+                DSL.openNamespace (LongIdentWithDots.CreateString (typeof<JToken>.Namespace) )
+                DSL.openNamespace (LongIdentWithDots.CreateString (typeof<JsonSerializer>.Namespace) )
+                DSL.openNamespace (LongIdentWithDots.CreateString (typeof<IHaveJToken>.Namespace) )
+            ]
+
             let namespaceOrModule =
                 {SynModuleOrNamespaceRcd.CreateNamespace(Ident.CreateLong namespace')
                     with
                         IsRecursive = true
-                        Declarations = modules }
+                        Declarations = [
+                                yield! openNamespaces
+                                yield! modules
+                            ] }
 
             namespaceOrModule
 

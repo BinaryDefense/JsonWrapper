@@ -3,77 +3,8 @@ open System
 open Myriad.Plugins
 open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
+open BinaryDefense.JsonWrapper.Core
 
-open FSharp.Reflection
-open System.Reflection
-
-
-type IHaveJToken  =
-    abstract member InnerData : JToken
-
-module Converters =
-
-    type IHaveJTokenConverter() =
-        inherit JsonConverter()
-        override __.CanConvert t =
-            typeof<IHaveJToken>.IsAssignableFrom(t)
-
-        override __.WriteJson(writer, value, serializer) =
-            match value with
-            | :? IHaveJToken as it -> serializer.Serialize(writer, it.InnerData)
-            | _ -> InvalidCastException("Did not implement type IHaveJToken") |> raise
-
-        override __.ReadJson(reader, t, _existingValue, serializer) =
-            let jtoken = JToken.ReadFrom reader
-            let ctor = t.GetConstructor([|typeof<JToken>; typeof<JsonSerializer>|])
-            ctor.Invoke([|
-                jtoken
-                serializer
-            |])
-    /// F# options-converter
-    type OptionConverter() =
-        inherit JsonConverter()
-        let optionTy = typedefof<option<_>>
-
-        override __.CanConvert t =
-            t.IsGenericType
-            && optionTy.Equals (t.GetGenericTypeDefinition())
-
-        override __.WriteJson(writer, value, serializer) =
-            let value =
-                if isNull value then
-                    null
-                else
-                    let _,fields = FSharpValue.GetUnionFields(value, value.GetType())
-                    fields.[0]
-            serializer.Serialize(writer, value)
-
-        override __.ReadJson(reader, t, _existingValue, serializer) =
-            let innerType = t.GetGenericArguments().[0]
-
-            let innerType =
-                if innerType.IsValueType then
-                    typedefof<Nullable<_>>.MakeGenericType([| innerType |])
-                else
-                    innerType
-
-            let value = serializer.Deserialize(reader, innerType)
-            let cases = FSharpType.GetUnionCases t
-
-            if isNull value then
-                FSharpValue.MakeUnion(cases.[0], [||])
-            else
-                FSharpValue.MakeUnion(cases.[1], [|value|])
-
-[<RequireQualifiedAccess>]
-module Attribute =
-    type MustExist() =
-        inherit Attribute()
-
-type MissingJsonFieldException(fieldName : string, ?jtoken : JToken) =
-    inherit Exception(sprintf "Failed to find json key \"%s\" on JToken" fieldName )
-    member __.JsonFieldName = fieldName
-    member __.JToken = jtoken
 
 
 [<Generator.JsonWrapper>]
@@ -99,7 +30,7 @@ type NullableFieldSchema = {
 
 [<Generator.JsonWrapper>]
 type NullableMissingFieldSchema = {
-    [<Attribute.MustExist>]
+    [<Attributes.MustExist>]
     one: System.Nullable<int>
     two: int
 }
@@ -120,6 +51,7 @@ type InnerType = {
 [<Generator.JsonWrapper>]
 type OuterType = {
     foo: InnerType
+    count : int
 }
 
 type Test1Wrapper( jtoken : JToken ) =
@@ -153,3 +85,31 @@ type Test3Wrapper( jtoken : JToken, serializer: Newtonsoft.Json.JsonSerializer )
         match o with
         | :? IHaveJToken as it -> Newtonsoft.Json.Linq.JToken.DeepEquals(it.InnerData, jtoken)
         | _ -> false
+
+
+type Test4Wrapper() =
+
+  let mutable _one = [|0|]
+  let mutable _two = 0
+  let mutable _three = ""
+
+  member _.one
+    with get () = _one
+    and set (newValue) =
+      _one <- newValue
+
+  member _.two
+    with get () = _two
+    and set (newValue: int) =
+      _two <- newValue
+
+
+  member _.three
+    with get () = _three
+    and set (newValue: string) =
+      _three <- newValue
+
+  member this.Deconstruct([<System.Runtime.InteropServices.Out>]one: _ outref, [<System.Runtime.InteropServices.Out>]two: _ outref, [<System.Runtime.InteropServices.Out>]three: _ outref) =
+    one <- this.one
+    two <- this.two
+    _three <- this.three
