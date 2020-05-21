@@ -12,6 +12,12 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Collections.Generic
 
+[<AutoOpen>]
+module FsAsts =
+    type SynExpr with
+        static member CreateLongIdent id =
+            SynExpr.LongIdent(false, id, None, range0)
+
 module DSL =
 
     let unitSynExpr = SynExpr.CreateConst SynConst.Unit
@@ -69,7 +75,7 @@ module DSL =
         SynSimplePat.Typed(ssp, ``type``, range.Zero )
 
     let createInstanceMethodCall instanceAndMethod args =
-        let valueExpr = SynExpr.CreateLongIdent(false, instanceAndMethod, None)
+        let valueExpr = SynExpr.CreateLongIdent instanceAndMethod
         SynExpr.CreateApp(valueExpr, args)
 
     let createInstanceMethodCallUnit instanceAndMethod =
@@ -80,7 +86,7 @@ module DSL =
     /// A more concrete example would be jtoken.ToObject<int>(serializer)
     let createGenericInstanceMethodCall instanceAndMethod types args =
         //Generates the methodCall {jtoken}.ToObject
-        let valueExpr = SynExpr.CreateLongIdent(false, instanceAndMethod, None)
+        let valueExpr = SynExpr.CreateLongIdent instanceAndMethod
         //Generates the Generic part of {jtoken}.ToObject<mytype>
         let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, types, [], None, range0, range0 )
         //Generates the function call {jtoken}.ToObject<mytype>(serializer)
@@ -195,7 +201,7 @@ module internal Create =
                         let ifCheck = SynExpr.CreateApp(SynExpr.CreateIdentString "isNull", SynExpr.CreateIdentString varName )
                         let ifBody =
                             let createException =
-                                let func = SynExpr.CreateLongIdent(false, missingJsonFieldExceptionIdent, None )
+                                let func = SynExpr.CreateLongIdent missingJsonFieldExceptionIdent
                                 let args =
                                     let arg1 = SynExpr.CreateConst(SynConst.CreateString(jsonFieldName))
                                     let arg2 = SynExpr.CreateIdent jtokenIdent
@@ -239,7 +245,7 @@ module internal Create =
             let setMemberExpr =
                 //Generates Newtonsoft.Json.Linq.JToken.FromObject function
                 let fromObjectFunc =
-                    SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString(sprintf "%s.FromObject" JToken.fullName),None )
+                    SynExpr.CreateLongIdent (LongIdentWithDots.CreateString(sprintf "%s.FromObject" JToken.fullName))
                 // Generates (x,serializer)
                 let fromObjectArgs =
                     let arg1 = SynExpr.CreateIdentString argVarName
@@ -333,9 +339,9 @@ module internal Create =
                         let castedToInteface = SynPat.IsInst(SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenInterface), range0)
                         SynPat.Named (castedToInteface, aliasedNameIdent,false, None, range0)
                     let rightSide =
-                        let deepEqualFunc = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString (sprintf "%s.DeepEquals" JToken.fullName), None)
+                        let deepEqualFunc = SynExpr.CreateLongIdent(LongIdentWithDots.CreateString (sprintf "%s.DeepEquals" JToken.fullName))
                         let deepEqualArgs =
-                            let arg1 = SynExpr.CreateLongIdent(false, LongIdentWithDots.CreateString(sprintf "%s.InnerData" aliasedName), None )
+                            let arg1 = SynExpr.CreateLongIdent( LongIdentWithDots.CreateString(sprintf "%s.InnerData" aliasedName) )
                             let arg2 = SynExpr.CreateIdentString jtokenIdenName
                             SynExpr.CreateTuple([arg1; arg2])
                             |> SynExpr.CreateParen
@@ -456,7 +462,7 @@ module internal Create =
                         | Some _ ->
                             LongIdentWithDots.Create [selfIden; fieldName; "Deconstruct" ]
                             |> DSL.createInstanceMethodCallUnit
-                        | None -> SynExpr.CreateLongIdent(false,LongIdentWithDots.Create [selfIden; fieldName ], None)
+                        | None -> SynExpr.CreateLongIdent( LongIdentWithDots.Create [selfIden; fieldName ])
 
                     SynExpr.LongIdentSet (LongIdentWithDots.CreateString fieldName, rightside, range0 )
                 )
