@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
   <PropertyGroup>
     <Title>BinaryDefense.Myriad.Plugins.JsonWrapper</Title>
@@ -18,6 +20,14 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="build\BinaryDefense.Myriad.Plugins.JsonWrapper.props">
+      <Pack>true</Pack>
+      <PackagePath>%(Identity)</PackagePath>
+      <Visible>true</Visible>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\BinaryDefense.JsonWrapper.Core\BinaryDefense.JsonWrapper.Core.fsproj" />
   </ItemGroup>

@@ -1,5 +1,5 @@
 <Project>
     <ItemGroup>
-        <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../bin/$(Configuration)/netstandard2.1/publish/BinaryDefense.Myriad.Plugins.JsonWrapper.dll" />
+        <MyriadSdkGenerator Include="$(MSBuildThisFileDirectory)/../bin/$(Configuration)/netstandard2.1/BinaryDefense.Myriad.Plugins.JsonWrapper.dll" />
     </ItemGroup>
 </Project>

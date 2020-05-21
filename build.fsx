@@ -425,22 +425,21 @@ let fsharpAnalyzers ctx =
         dotnet.fsharpAnalyzer id args
     )
 
-let dotnetPublish ctx =
+// let dotnetPublish ctx =
 
-    let publish proj =
-        DotNet.publish(fun c ->
-            { c with
-                Configuration = configuration (ctx.Context.AllExecutingTargets)
-            }) proj
+//     let publish proj =
+//         DotNet.publish(fun c ->
+//             { c with
+//                 Configuration = configuration (ctx.Context.AllExecutingTargets)
+//             }) proj
 
-    !! srcGlob
-    |> Seq.iter publish
+//     !! srcGlob
+//     |> Seq.filter(fun c -> c.Contains "Myriad.Plugins")
+//     |> Seq.iter publish
 
 
 
 let dotnetTest ctx =
-
-    // dotnetPublish ctx
 
     let excludeCoverage =
         !! testsGlob
@@ -448,7 +447,7 @@ let dotnetTest ctx =
         |> String.concat "|"
     let args =
         [
-            // "--no-build"
+            "--no-build"
             sprintf "/p:AltCover=%b" (not disableCodeCoverage)
             sprintf "/p:AltCoverThreshold=%d" coverageThresholdPercent
             sprintf "/p:AltCoverAssemblyExcludeFilter=%s" excludeCoverage
@@ -675,7 +674,7 @@ Target.create "DotnetRestore" dotnetRestore
 Target.create "UpdateChangelog" updateChangelog
 Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this in the dependency chain
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
-Target.create "DotnetBuild" dotnetPublish
+Target.create "DotnetBuild" dotnetBuild
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
 Target.create "GenerateCoverageReport" generateCoverageReport
