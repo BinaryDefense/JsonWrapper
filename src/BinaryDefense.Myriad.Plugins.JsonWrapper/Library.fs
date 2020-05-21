@@ -101,7 +101,7 @@ module DSL =
         SynExpr.CreateApp(valueExprWithType, args)
 
 
-    let pipeRightIdent = Ident.Create "op_PipeRight"
+    let private pipeRightIdent = Ident.Create "op_PipeRight"
 
     // Creates : {{synExpr1}} |> {{synExpr2}}
     let pipeRight synExpr2 synExpr1 =
@@ -127,6 +127,13 @@ module DSL =
                 |> inner tail
         inner exprs None
 
+module SystemObject =
+    let getHashCodeMethod =
+        Reflection.methodName <@ fun (x : obj) -> x.GetHashCode() @>
+
+    let equalsMethod =
+        Reflection.methodName <@ fun (x : obj) -> x.Equals(null) @>
+
 module FSharpCore =
     let raiseIdent = Ident.Create (nameof raise)
 
@@ -146,6 +153,19 @@ module JToken =
         let instanceAndMethod =  LongIdentWithDots.Create [instance.idText; toObjectMethod]
         let args =  SynExpr.CreateIdent serializer
         DSL.createGenericInstanceMethodCall instanceAndMethod [generic] args
+
+
+    let private fromObjectMethod =
+        nameof JToken.FromObject
+
+    let staticFromObject jtoken serializer =
+        let instanceAndMethod =  LongIdentWithDots.Create [name; fromObjectMethod]
+        let args =
+            DSL.createParenedTuple [
+                SynExpr.CreateIdent jtoken
+                SynExpr.CreateIdent serializer
+            ]
+        DSL.createInstanceMethodCall instanceAndMethod args
 
     let private getHashCodeMethod =
         Reflection.methodName <@ fun (x : JToken) -> x.GetHashCode() @>
@@ -195,6 +215,7 @@ module MissingJsonFieldException =
 
 module internal Create =
 
+    /// Keeps a map of known generated types and their Deconstruct out parameters.  Used in nesting Deconstructs.
     let knownDeconstructs = new Dictionary<_,_>()
 
     type GetterAccessor =
@@ -217,12 +238,12 @@ module internal Create =
         let unitArg = SynPatRcd.Const { SynPatConstRcd.Const = SynConst.Unit ; Range = range.Zero }
 
 
-        let createCtor () =
+        let createCtor =
             let arg1 = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent JToken.nameLongIdent)
             let arg2 = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
             DSL.createCtor [arg1; arg2;]
 
-        let createGetterSynValdatea () =
+        let createGetterSynValdatea  =
             let memberFlags : MemberFlags = {
                 IsInstance = true
                 IsDispatchSlot = false
@@ -283,31 +304,23 @@ module internal Create =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
                     Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; fieldName.idText]) , [unitArg])
-                    ValData = createGetterSynValdatea ()
+                    ValData = createGetterSynValdatea
                     ReturnInfo = SynBindingReturnInfoRcd.Create fieldTy |> Some
                     Expr = getMemberExpr
                 }
 
-            let argVarName = "newValue"
+            let argVarName = Ident.Create "newValue"
 
             let setArg =
                 let arg =
-                    let named = SynPatRcd.CreateNamed(Ident.Create argVarName, SynPatRcd.CreateWild )
+                    let named = SynPatRcd.CreateNamed(argVarName, SynPatRcd.CreateWild)
                     SynPatRcd.CreateTyped(named, fieldTy)
                     |> SynPatRcd.CreateParen
                 arg
 
             let setMemberExpr =
-                //Generates Newtonsoft.Json.Linq.JToken.FromObject function
-                let fromObjectFunc =
-                    SynExpr.CreateLongIdent (LongIdentWithDots.CreateString(sprintf "%s.FromObject" JToken.name))
-                // Generates (x,serializer)
-                let fromObjectArgs =
-                    let arg1 = SynExpr.CreateIdentString argVarName
-                    let arg2 = SynExpr.CreateIdent jsonSerializerNameIdent
-                    DSL.createParenedTuple [arg1; arg2]
-                //Generates Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
-                let fromObjectFuncWithArgs = SynExpr.CreateApp(fromObjectFunc, fromObjectArgs)
+                //Generates JToken.FromObject(x, serializer)
+                let fromObjectFuncWithArgs = JToken.staticFromObject argVarName jsonSerializerNameIdent
                 //Generates the jtoken.["jsonFieldName"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
                 let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
                 SynExpr.DotIndexedSet( SynExpr.Ident jtokenIdent, idx, fromObjectFuncWithArgs, range.Zero, range.Zero, range0 )
@@ -323,7 +336,7 @@ module internal Create =
             [ getMember; setMember]
             |> List.map SynMemberDefn.CreateMember
 
-        let createGetSetMembersFromRecord () =
+        let createGetSetMembersFromRecord  =
             fields
             |> List.collect(fun f ->
                 let frcd = f.ToRcd
@@ -372,7 +385,7 @@ module internal Create =
             let getHashCodeMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; "GetHashCode"]) , [unitArg])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; SystemObject.getHashCodeMethod]) , [unitArg])
                     ValData = valData
                     Expr = body
                 }
@@ -416,7 +429,7 @@ module internal Create =
             let equalMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
-                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; "Equals"]) , [equalArg])
+                    Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; SystemObject.equalsMethod]) , [equalArg])
                     ValData = valData
                     Expr = matchStatement
                 }
@@ -455,6 +468,7 @@ module internal Create =
 
         /// Allows for pattern matching against properties
         let createDeconstruct =
+            let deconstructMethodName ="Deconstruct"
 
             let memberArgs =
                 let arg argName fieldTy =
@@ -471,20 +485,8 @@ module internal Create =
                 |> Seq.map(fun f ->
                     let rcd = f.ToRcd
                     let x = rcd.Id |> Option.get
-                    let rcd = arg x.idText rcd.Type
-                    let attribute : SynAttribute= {
-                        AppliesToGetterAndSetter = false
-                        ArgExpr = SynExpr.CreateConst SynConst.Unit
-                        SynAttribute.TypeName = LongIdentWithDots.CreateString "System.Runtime.InteropServices.Out"
-                        SynAttribute.Target = None
-                        SynAttribute.Range = range0
-
-                    }
-                    let attrs : SynAttributeList = { Attributes = [attribute]; Range = range0}
-                    let attrs = SynAttributes.Cons(attrs, SynAttributes.Empty)
-
-                    // SynPatRcd.CreateAttrib(rcd, attrs)
-                    rcd
+                    let argRcd = arg x.idText rcd.Type
+                    argRcd
                 )
                 |> Seq.toList
                 |> SynPatRcd.CreateTuple
@@ -505,11 +507,11 @@ module internal Create =
                     let rcd = f.ToRcd
                     let ident = rcd.Id |> Option.get
                     let fieldTy = rcd.Type
-                    let fieldName = string ident
+                    let fieldName = ident.idText
                     let rightside =
                         match getDeconstructType fieldTy with
                         | Some _ ->
-                            LongIdentWithDots.Create [selfIden; fieldName; "Deconstruct" ]
+                            LongIdentWithDots.Create [selfIden; fieldName; deconstructMethodName ]
                             |> DSL.createInstanceMethodCallUnit
                         | None -> SynExpr.CreateLongIdent( LongIdentWithDots.Create [selfIden; fieldName ])
 
@@ -520,7 +522,7 @@ module internal Create =
             let bindingRecord = {
                     SynBindingRcd.Null with
                         ValData = createInnerDataMemberVal
-                        Pattern = SynPatRcd.CreateLongIdent (LongIdentWithDots.Create [selfIden; "Deconstruct"], memberArgs)
+                        Pattern = SynPatRcd.CreateLongIdent (LongIdentWithDots.Create [selfIden; deconstructMethodName], memberArgs)
                         Expr = body
                         XmlDoc = PreXmlDoc.Create ["This allows the class to be pattern matched against"]
                 }
@@ -538,8 +540,8 @@ module internal Create =
             SynMemberDefn.CreateMember(bindingRecord)
 
         let members = [
-            createCtor ()
-            yield! createGetSetMembersFromRecord ()
+            createCtor
+            yield! createGetSetMembersFromRecord
             createOverrideGetHashCode
             createOverrideEquals
             createDeconstruct
