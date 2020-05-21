@@ -16,22 +16,18 @@ open System.Collections.Generic
 module Reflection =
 
     open Microsoft.FSharp.Quotations.Patterns
+    /// Gets a statically type property name of an instance
     let rec propertyName quotation =
         match quotation with
         | PropertyGet(_, propertyInfo, _) -> propertyInfo.Name
         | Lambda(_, expr) -> propertyName expr
         | _ -> ""
 
+    /// Gets a statically typed method name of an instance
     let methodName quotation=
         match quotation with
         | Lambda (_, Call (_, mi, _)) -> mi.Name
         | _ -> failwith "%A is not a valid getMethodName expression, expected Lamba(_ Call(_, _, _))"
-
-    let rec funName quotation =
-        match quotation with
-        | Call(None, methodInfo, _) -> methodInfo.Name
-        | Lambda(_, expr) -> funName expr
-        | _ -> failwith "Unexpected input"
 
 [<AutoOpen>]
 module FsAsts =
@@ -42,17 +38,24 @@ module FsAsts =
 
 module DSL =
 
+    /// Creates : open {{namespace}}
     let openNamespace (``namespace`` : LongIdentWithDots) =
         SynModuleDecl.CreateOpen (``namespace``)
 
+    /// Creates a tuple for method signatures
     let createTypleSynType args =
         SynType.Tuple(false, args |> List.map(fun s -> false,s), range0)
 
-    /// Creates : (arg1, arg2... argN0
+    /// Creates : match {{matchCheck}} with | {{clause1}} | {{clause2}} ... | {{clauseN}}
+    let createMatch matchCheck clauses =
+        SynExpr.Match(DebugPointForBinding.DebugPointAtBinding range0, matchCheck, clauses, range0)
+
+    /// Creates : (arg1, arg2... argN0)
     let createParenedTuple args =
         SynExpr.CreateTuple args
         |> SynExpr.CreateParen
 
+    /// Creates : if {{ifCheck}} then {{ifbody}} else {{elseBody}}
     let createIfThenElse ifCheck ifBody elseBody =
         SynExpr.IfThenElse(ifCheck, ifBody, elseBody, DebugPointForBinding.DebugPointAtBinding range0, false, range0, range0)
 
@@ -77,10 +80,12 @@ module DSL =
         let ssp = SynSimplePat.Id(ident, None, false, false, false, range.Zero)
         SynSimplePat.Typed(ssp, ``type``, range.Zero )
 
+    /// Creates : instanceAndMethod(args)
     let createInstanceMethodCall instanceAndMethod args =
         let valueExpr = SynExpr.CreateLongIdent instanceAndMethod
         SynExpr.CreateApp(valueExpr, args)
 
+    /// Creates : instanceAndMethod()
     let createInstanceMethodCallUnit instanceAndMethod =
         createInstanceMethodCall instanceAndMethod SynExpr.Unit
 
@@ -130,16 +135,54 @@ module FSharpCore =
         SynExpr.CreateApp(SynExpr.CreateIdent isNullIdent , SynExpr.CreateIdent ident )
 
 module JToken =
-    let fullName = typeof<Newtonsoft.Json.Linq.JToken>.Name
-    let fullNameLongIdent = LongIdentWithDots.CreateString fullName
+    let ``namespace`` = typeof<JToken>.Namespace
+    let name = typeof<JToken>.Name
+    let nameLongIdent = LongIdentWithDots.CreateString name
 
     let private toObjectMethod =
-        Reflection.methodName <@ fun (x : Newtonsoft.Json.Linq.JToken) -> x.ToObject() @>
+        Reflection.methodName <@ fun (x : JToken) -> x.ToObject() @>
 
-    let instanceToObject (instance : Ident) (generic : SynType) (serializer : Ident)=
+    let instanceToObject (instance : Ident) (generic : SynType) (serializer : Ident) =
         let instanceAndMethod =  LongIdentWithDots.Create [instance.idText; toObjectMethod]
         let args =  SynExpr.CreateIdent serializer
         DSL.createGenericInstanceMethodCall instanceAndMethod [generic] args
+
+    let private getHashCodeMethod =
+        Reflection.methodName <@ fun (x : JToken) -> x.GetHashCode() @>
+
+    let instanceGetHashCode (instance : Ident) =
+        let instanceAndMethod =  LongIdentWithDots.Create [instance.idText; getHashCodeMethod]
+        DSL.createInstanceMethodCallUnit instanceAndMethod
+
+    let private deepEqualsMethod =
+        nameof JToken.DeepEquals
+
+    let staticDeepEquals arg1 arg2 =
+        let deepEqualFunc =
+            SynExpr.CreateLongIdent (
+                LongIdentWithDots.Create [
+                    name
+                    deepEqualsMethod
+                ]
+            )
+        let deepEqualArgs = DSL.createParenedTuple [arg1; arg2]
+        SynExpr.CreateApp(deepEqualFunc, deepEqualArgs)
+
+module IHaveJToken =
+
+    let name = typeof<IHaveJToken>.Name
+    let ``namespace`` = typeof<IHaveJToken>.Namespace
+
+    let innerDataProperty =
+        Reflection.propertyName <@fun (x : IHaveJToken) -> x.InnerData @>
+
+    let instanceInnerData (instance : Ident) =
+        SynExpr.CreateLongIdent(
+            LongIdentWithDots.Create [
+                instance.idText
+                innerDataProperty
+            ]
+        )
 
 module MissingJsonFieldException =
     let name = typeof<MissingJsonFieldException>.Name
@@ -160,7 +203,7 @@ module internal Create =
     /// The backing field must exist on the JToken, should be used with Nullable or Option types
     | MustExist
 
-    let createWrapperClass  (parent: LongIdent) (fields: SynField list) (jtokenInterface : string) =
+    let createWrapperClass  (parent: LongIdent) (fields: SynField list) =
 
         let jsonSerializerFullName = typeof<JsonSerializer>.Name
         let jsonSerializerFullNameLongIdent = LongIdentWithDots.CreateString  jsonSerializerFullName
@@ -175,7 +218,7 @@ module internal Create =
 
 
         let createCtor () =
-            let arg1 = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent JToken.fullNameLongIdent)
+            let arg1 = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent JToken.nameLongIdent)
             let arg2 = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
             DSL.createCtor [arg1; arg2;]
 
@@ -257,13 +300,12 @@ module internal Create =
             let setMemberExpr =
                 //Generates Newtonsoft.Json.Linq.JToken.FromObject function
                 let fromObjectFunc =
-                    SynExpr.CreateLongIdent (LongIdentWithDots.CreateString(sprintf "%s.FromObject" JToken.fullName))
+                    SynExpr.CreateLongIdent (LongIdentWithDots.CreateString(sprintf "%s.FromObject" JToken.name))
                 // Generates (x,serializer)
                 let fromObjectArgs =
                     let arg1 = SynExpr.CreateIdentString argVarName
                     let arg2 = SynExpr.CreateIdent jsonSerializerNameIdent
-                    SynExpr.CreateTuple([arg1; arg2])
-                    |> SynExpr.CreateParen
+                    DSL.createParenedTuple [arg1; arg2]
                 //Generates Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
                 let fromObjectFuncWithArgs = SynExpr.CreateApp(fromObjectFunc, fromObjectArgs)
                 //Generates the jtoken.["jsonFieldName"] <- Newtonsoft.Json.Linq.JToken.FromObject(x, serializer)
@@ -317,9 +359,7 @@ module internal Create =
             )
 
         let createOverrideGetHashCode =
-            let body =
-                let instanceAndCall = LongIdentWithDots.Create [jtokenIdenName.ToString(); "GetHashCode"]
-                DSL.createInstanceMethodCall instanceAndCall (SynExpr.CreateConst SynConst.Unit)
+            let body = JToken.instanceGetHashCode jtokenIdent
 
             let memberFlags : MemberFlags = {
                 IsInstance = true
@@ -348,20 +388,17 @@ module internal Create =
                     let aliasedName = "jTokenToCompare"
                     let aliasedNameIdent = Ident.Create aliasedName
                     let leftSide =
-                        let castedToInteface = SynPat.IsInst(SynType.CreateLongIdent(LongIdentWithDots.CreateString jtokenInterface), range0)
+                        let castedToInteface = SynPat.IsInst(SynType.CreateLongIdent(LongIdentWithDots.CreateString IHaveJToken.name), range0)
                         SynPat.Named (castedToInteface, aliasedNameIdent,false, None, range0)
                     let rightSide =
-                        let deepEqualFunc = SynExpr.CreateLongIdent(LongIdentWithDots.CreateString (sprintf "%s.DeepEquals" JToken.fullName))
-                        let deepEqualArgs =
-                            let arg1 = SynExpr.CreateLongIdent( LongIdentWithDots.CreateString(sprintf "%s.InnerData" aliasedName) )
-                            let arg2 = SynExpr.CreateIdentString jtokenIdenName
-                            SynExpr.CreateTuple([arg1; arg2])
-                            |> SynExpr.CreateParen
-                        SynExpr.CreateApp(deepEqualFunc, deepEqualArgs)
+                        let arg1 = IHaveJToken.instanceInnerData aliasedNameIdent
+                        let arg2 = SynExpr.CreateIdent jtokenIdent
+                        JToken.staticDeepEquals arg1 arg2
                     SynMatchClause.Clause(leftSide, None, rightSide, range0, DebugPointForTarget.Yes)
                 let clause2 =
                     SynMatchClause.Clause(SynPat.Wild range0, None, SynExpr.CreateConst (SynConst.Bool(false)), range0, DebugPointForTarget.Yes)
-                SynExpr.Match(DebugPointForBinding.DebugPointAtBinding range0, SynExpr.CreateIdent arg1VarNameIdent, [clause1; clause2], range0)
+                let matchCheck = SynExpr.CreateIdent arg1VarNameIdent
+                DSL.createMatch matchCheck [clause1; clause2]
             let memberFlags : MemberFlags = {
                 IsInstance = true
                 IsDispatchSlot = false
@@ -400,12 +437,12 @@ module internal Create =
                 let bindingRecord = {
                     SynBindingRcd.Null with
                         ValData = createInnerDataMemberVal
-                        Pattern = SynPatRcd.CreateLongIdent (LongIdentWithDots.Create [selfIden; "InnerData"], [])
+                        Pattern = SynPatRcd.CreateLongIdent (LongIdentWithDots.Create [selfIden; IHaveJToken.innerDataProperty], [])
                         Expr = SynExpr.CreateIdent jtokenIdent
                 }
 
                 [ SynMemberDefn.CreateMember(bindingRecord)]
-            SynMemberDefn.Interface(SynType.CreateLongIdent(jtokenInterface), Some implementedMembers, range0)
+            SynMemberDefn.Interface(SynType.CreateLongIdent(IHaveJToken.name), Some implementedMembers, range0)
 
 
         let getDeconstructType fieldTy =
@@ -516,11 +553,10 @@ module internal Create =
         let (TypeDefn(synComponentInfo, synTypeDefnRepr, _members, _range)) = typeDefn
         let (ComponentInfo(_attributes, _typeParams, _constraints, recordId, _doc, _preferPostfix, _access, _range)) = synComponentInfo
 
-        let jtokenInferface = "IHaveJToken" //TODO: Scan and get fully qualified
         match synTypeDefnRepr with
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(_accessibility, recordFields, _recordRange), _range) ->
 
-            let createWrapperClass = createWrapperClass recordId recordFields jtokenInferface
+            let createWrapperClass = createWrapperClass recordId recordFields
 
             let declarations = [
                 createWrapperClass
@@ -551,9 +587,9 @@ type JsonWrapperGenerator() =
 
 
             let openNamespaces = [
-                DSL.openNamespace (LongIdentWithDots.CreateString (typeof<JToken>.Namespace) )
+                DSL.openNamespace (LongIdentWithDots.CreateString (JToken.``namespace``) )
                 DSL.openNamespace (LongIdentWithDots.CreateString (typeof<JsonSerializer>.Namespace) )
-                DSL.openNamespace (LongIdentWithDots.CreateString (typeof<IHaveJToken>.Namespace) )
+                DSL.openNamespace (LongIdentWithDots.CreateString (IHaveJToken.``namespace``) )
             ]
 
             let namespaceOrModule =
