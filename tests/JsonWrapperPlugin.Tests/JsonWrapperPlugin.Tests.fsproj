@@ -3,6 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+        <LangVersion>preview</LangVersion>
         <!-- <MyriadSdkVerboseOutput>true</MyriadSdkVerboseOutput> -->
         <!-- <MyriadSdkWaitForDebugger>true</MyriadSdkWaitForDebugger> -->
     </PropertyGroup>

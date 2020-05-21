@@ -12,15 +12,8 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Collections.Generic
 
-[<AutoOpen>]
-module FsAsts =
-    type SynExpr with
-        static member CreateLongIdent id =
-            SynExpr.LongIdent(false, id, None, range0)
 
-module DSL =
-
-    let unitSynExpr = SynExpr.CreateConst SynConst.Unit
+module Reflection =
 
     open Microsoft.FSharp.Quotations.Patterns
     let rec propertyName quotation =
@@ -29,10 +22,25 @@ module DSL =
         | Lambda(_, expr) -> propertyName expr
         | _ -> ""
 
-    let methodName (e) =
-      match e with
-      | Lambda (_, Call (_, mi, _)) -> mi.Name
-      | _ -> failwith "%A is not a valid getMethodName expression, expected Lamba(_ Call(_, _, _))"
+    let methodName quotation=
+        match quotation with
+        | Lambda (_, Call (_, mi, _)) -> mi.Name
+        | _ -> failwith "%A is not a valid getMethodName expression, expected Lamba(_ Call(_, _, _))"
+
+    let rec funName quotation =
+        match quotation with
+        | Call(None, methodInfo, _) -> methodInfo.Name
+        | Lambda(_, expr) -> funName expr
+        | _ -> failwith "Unexpected input"
+
+[<AutoOpen>]
+module FsAsts =
+    type SynExpr with
+        static member Unit = SynExpr.CreateConst SynConst.Unit
+        static member CreateLongIdent id =
+            SynExpr.LongIdent(false, id, None, range0)
+
+module DSL =
 
     let openNamespace (``namespace`` : LongIdentWithDots) =
         SynModuleDecl.CreateOpen (``namespace``)
@@ -40,14 +48,9 @@ module DSL =
     let createTypleSynType args =
         SynType.Tuple(false, args |> List.map(fun s -> false,s), range0)
 
-    /// Creates : arg1, arg2... argN
-    let createTuple args =
-        SynExpr.Tuple(false, args, [], range0)
-
-
     /// Creates : (arg1, arg2... argN0
     let createParenedTuple args =
-        createTuple args
+        SynExpr.CreateTuple args
         |> SynExpr.CreateParen
 
     let createIfThenElse ifCheck ifBody elseBody =
@@ -79,7 +82,7 @@ module DSL =
         SynExpr.CreateApp(valueExpr, args)
 
     let createInstanceMethodCallUnit instanceAndMethod =
-        createInstanceMethodCall instanceAndMethod unitSynExpr
+        createInstanceMethodCall instanceAndMethod SynExpr.Unit
 
     /// Creates {{instanceAndMethod}}<{{types}}>({{args}})
     ///
@@ -119,18 +122,33 @@ module DSL =
                 |> inner tail
         inner exprs None
 
+module FSharpCore =
+    let raiseIdent = Ident.Create (nameof raise)
+
+    let isNullIdent = Ident.Create (nameof isNull)
+    let isNull ident =
+        SynExpr.CreateApp(SynExpr.CreateIdent isNullIdent , SynExpr.CreateIdent ident )
+
 module JToken =
-    let fullName =
-        typeof<Newtonsoft.Json.Linq.JToken>.Name
+    let fullName = typeof<Newtonsoft.Json.Linq.JToken>.Name
     let fullNameLongIdent = LongIdentWithDots.CreateString fullName
 
     let private toObjectMethod =
-        DSL.methodName <@ fun (x : Newtonsoft.Json.Linq.JToken) -> x.ToObject() @>
+        Reflection.methodName <@ fun (x : Newtonsoft.Json.Linq.JToken) -> x.ToObject() @>
 
-    let instanceToObject (instance : string) (generic : SynType) (serializer : Ident)=
-        let instanceAndMethod =  LongIdentWithDots.CreateString (sprintf "%s.%s" instance toObjectMethod)
+    let instanceToObject (instance : Ident) (generic : SynType) (serializer : Ident)=
+        let instanceAndMethod =  LongIdentWithDots.Create [instance.idText; toObjectMethod]
         let args =  SynExpr.CreateIdent serializer
         DSL.createGenericInstanceMethodCall instanceAndMethod [generic] args
+
+module MissingJsonFieldException =
+    let name = typeof<MissingJsonFieldException>.Name
+    let nameLongIdent = LongIdentWithDots.CreateString name
+
+    let ctor fieldName jtoken =
+        let func = SynExpr.CreateLongIdent nameLongIdent
+        let args = DSL.createParenedTuple [fieldName; jtoken]
+        SynExpr.CreateApp(func, args)
 
 module internal Create =
 
@@ -146,8 +164,7 @@ module internal Create =
 
         let jsonSerializerFullName = typeof<JsonSerializer>.Name
         let jsonSerializerFullNameLongIdent = LongIdentWithDots.CreateString  jsonSerializerFullName
-        let missingJsonFieldException = typeof<MissingJsonFieldException>.Name
-        let missingJsonFieldExceptionIdent = LongIdentWithDots.CreateString missingJsonFieldException
+
         let info = SynComponentInfoRcd.Create parent
         let jtokenIdenName =  "jtoken"
         let jtokenIdent = Ident.Create jtokenIdenName
@@ -162,7 +179,7 @@ module internal Create =
             let arg2 = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
             DSL.createCtor [arg1; arg2;]
 
-        let createGetter () =
+        let createGetterSynValdatea () =
             let memberFlags : MemberFlags = {
                 IsInstance = true
                 IsDispatchSlot = false
@@ -172,7 +189,7 @@ module internal Create =
             }
             SynValData.SynValData(Some memberFlags, SynValInfo.Empty, None)
 
-        let createSetter () =
+        let createSetterSynValData () =
             let memberFlags : MemberFlags = {
                 IsInstance = true
                 IsDispatchSlot = false
@@ -187,27 +204,23 @@ module internal Create =
 
             let getMemberExpr =
 
-                let varName = "selectedToken"
+                let varName = Ident.Create "selectedToken"
                 let continuation =
-                     //Generates the function call {jtoken}.ToObject<mytype>(serializer)
+                     //Generates the function call {varName}.ToObject<fieldTy>(serializer)
                     let toObjectCall =
                         JToken.instanceToObject varName fieldTy jsonSerializerNameIdent
-                        // let instanceAndMethod =  LongIdentWithDots.CreateString (sprintf "%s.ToObject" varName)
-                        // let args =  SynExpr.CreateIdent jsonSerializerNameIdent
-                        // DSL.createGenericInstanceMethodCall instanceAndMethod [fieldTy] args
 
                     match getAccessor with
                     | MustExist ->
-                        let ifCheck = SynExpr.CreateApp(SynExpr.CreateIdentString "isNull", SynExpr.CreateIdentString varName )
+                        let ifCheck = FSharpCore.isNull varName
                         let ifBody =
                             let createException =
-                                let func = SynExpr.CreateLongIdent missingJsonFieldExceptionIdent
-                                let args =
-                                    let arg1 = SynExpr.CreateConst(SynConst.CreateString(jsonFieldName))
-                                    let arg2 = SynExpr.CreateIdent jtokenIdent
-                                    DSL.createParenedTuple [arg1; arg2]
-                                SynExpr.CreateApp(func, args)
-                            createException |> DSL.pipeRight (SynExpr.CreateIdentString "raise")
+                                let arg1 = SynExpr.CreateConst(SynConst.CreateString(jsonFieldName))
+                                let arg2 = SynExpr.CreateIdent jtokenIdent
+                                MissingJsonFieldException.ctor arg1 arg2
+                            // Generates exception |> raise
+                            createException |> DSL.pipeRight (SynExpr.CreateIdent FSharpCore.raiseIdent)
+                        // Generates if isNull {varName} then raise exception
                         let existCheck = DSL.createIfThenElse ifCheck ifBody None
                         DSL.sequentialExpressions [
                             existCheck
@@ -217,18 +230,17 @@ module internal Create =
                     | CanBeMissing ->
                         toObjectCall
 
-                let vIdent = Ident.Create varName
                 //Generates the jtoken.[{jsonFieldName}]
                 let idx = [SynIndexerArg.One(SynExpr.CreateConstString jsonFieldName, false, range.Zero )]
                 let jTokenAccessor = SynExpr.DotIndexedGet( SynExpr.Ident jtokenIdent, idx, range.Zero, range.Zero )
                 // Generates let v = jtoken.[{jsonFieldName}]
-                DSL.createLetAssignment vIdent jTokenAccessor continuation
+                DSL.createLetAssignment varName jTokenAccessor continuation
 
             let getMember =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
                     Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; fieldName.idText]) , [unitArg])
-                    ValData = createGetter ()
+                    ValData = createGetterSynValdatea ()
                     ReturnInfo = SynBindingReturnInfoRcd.Create fieldTy |> Some
                     Expr = getMemberExpr
                 }
@@ -262,7 +274,7 @@ module internal Create =
                 { SynBindingRcd.Null with
                     Kind =  SynBindingKind.NormalBinding
                     Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.Create ([selfIden; fieldName.idText]) , [setArg])
-                    ValData = createSetter ()
+                    ValData = createSetterSynValData ()
                     Expr = setMemberExpr
                 }
 
