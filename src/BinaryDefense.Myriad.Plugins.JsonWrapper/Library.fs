@@ -10,8 +10,11 @@ open FSharp.Compiler.XmlDoc
 open BinaryDefense.JsonWrapper.Core
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
+open System.Collections.Generic
 
 module DSL =
+
+    let unitSynExpr = SynExpr.CreateConst SynConst.Unit
 
     open Microsoft.FSharp.Quotations.Patterns
     let rec propertyName quotation =
@@ -28,6 +31,8 @@ module DSL =
     let openNamespace (``namespace`` : LongIdentWithDots) =
         SynModuleDecl.CreateOpen (``namespace``)
 
+    let createTypleSynType args =
+        SynType.Tuple(false, args |> List.map(fun s -> false,s), range0)
 
     /// Creates : arg1, arg2... argN
     let createTuple args =
@@ -67,6 +72,8 @@ module DSL =
         let valueExpr = SynExpr.CreateLongIdent(false, instanceAndMethod, None)
         SynExpr.CreateApp(valueExpr, args)
 
+    let createInstanceMethodCallUnit instanceAndMethod =
+        createInstanceMethodCall instanceAndMethod unitSynExpr
 
     /// Creates {{instanceAndMethod}}<{{types}}>({{args}})
     ///
@@ -120,6 +127,8 @@ module JToken =
         DSL.createGenericInstanceMethodCall instanceAndMethod [generic] args
 
 module internal Create =
+
+    let knownDeconstructs = new Dictionary<_,_>()
 
     type GetterAccessor =
     /// The backing field can be missing on the JToken, should be used with Nullable or Option types
@@ -380,14 +389,28 @@ module internal Create =
                 [ SynMemberDefn.CreateMember(bindingRecord)]
             SynMemberDefn.Interface(SynType.CreateLongIdent(jtokenInterface), Some implementedMembers, range0)
 
+
+        let getDeconstructType fieldTy =
+            match fieldTy with
+            | SynType.LongIdent ident ->
+                match knownDeconstructs.TryGetValue(ident.AsString) with
+                |(true ,v) -> Some v
+                | _ -> None
+            | _ -> None
+
         /// Allows for pattern matching against properties
         let createDeconstruct =
 
             let memberArgs =
                 let arg argName fieldTy =
-                    let named = SynPatRcd.CreateNamed(Ident.Create argName, SynPatRcd.CreateWild )
-                    let typ = SynType.CreateApp(SynType.CreateLongIdent "outref", [fieldTy], false )
-                    SynPatRcd.CreateTyped(named, typ)
+                    let create fieldTy =
+                        let named = SynPatRcd.CreateNamed(Ident.Create argName, SynPatRcd.CreateWild )
+                        let typ = SynType.CreateApp(SynType.CreateLongIdent "outref", [fieldTy], false )
+                        SynPatRcd.CreateTyped(named, typ)
+
+                    match getDeconstructType fieldTy with
+                    | Some fieldTy -> create fieldTy
+                    | None -> create fieldTy
 
                 fields
                 |> Seq.map(fun f ->
@@ -426,8 +449,15 @@ module internal Create =
                 |> List.map(fun f ->
                     let rcd = f.ToRcd
                     let ident = rcd.Id |> Option.get
+                    let fieldTy = rcd.Type
                     let fieldName = string ident
-                    let rightside = SynExpr.CreateLongIdent(false,LongIdentWithDots.Create [selfIden; fieldName ], None)
+                    let rightside =
+                        match getDeconstructType fieldTy with
+                        | Some _ ->
+                            LongIdentWithDots.Create [selfIden; fieldName; "Deconstruct" ]
+                            |> DSL.createInstanceMethodCallUnit
+                        | None -> SynExpr.CreateLongIdent(false,LongIdentWithDots.Create [selfIden; fieldName ], None)
+
                     SynExpr.LongIdentSet (LongIdentWithDots.CreateString fieldName, rightside, range0 )
                 )
                 |> DSL.sequentialExpressions
@@ -439,6 +469,16 @@ module internal Create =
                         Expr = body
                         XmlDoc = PreXmlDoc.Create ["This allows the class to be pattern matched against"]
                 }
+            let parentName =  parent.Head.idText
+            let synExprType =
+                fields
+                |> List.map(fun f ->
+                    let rcd = f.ToRcd
+                    rcd.Type
+                )
+                |> DSL.createTypleSynType
+
+            knownDeconstructs.Add(parentName, synExprType)
 
             SynMemberDefn.CreateMember(bindingRecord)
 

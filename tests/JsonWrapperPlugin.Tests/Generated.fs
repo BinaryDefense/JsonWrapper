@@ -227,8 +227,8 @@ type OuterType(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(foo: outref<InnerType>, count: outref<int>) =
-        foo <- this.foo
+    member this.Deconstruct(foo: outref<int option * string>, count: outref<int>) =
+        foo <- this.foo.Deconstruct()
         count <- this.count
 
     interface IHaveJToken with

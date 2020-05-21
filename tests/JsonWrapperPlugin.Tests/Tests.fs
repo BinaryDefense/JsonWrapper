@@ -224,15 +224,13 @@ let traversalTests =
             Expect.equal innerActual.two innerExpected.two ""
 
             Expect.equal innerActual innerExpected ""
-            // Expect.equal test1.two -1000 ""
 
         testCase "Deconstruct" <| fun _ ->
             let outerJToken = JToken.Parse jsonStr
 
             let outer = OuterType(outerJToken, looseSerializer)
-            let foo = System.Guid.Parse("f971a6c0-ed00-46e5-b657-3fea2e368ba9")
             match outer.Deconstruct() with
-            | (inner, 10) -> ()
+            | ((None,"-1000"), 10) -> ()
             | fallthru -> failwithf "Couldn't match %A" fallthru
     ]
 
