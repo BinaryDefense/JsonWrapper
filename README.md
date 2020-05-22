@@ -1,6 +1,6 @@
-# JsonWrapperPlugin
+# BinaryDefense.JsonWrapper
 
-[Enter useful description for JsonWrapperPlugin]
+[Enter useful description for BinaryDefense.JsonWrapper]
 
 ---
 
@@ -8,14 +8,14 @@
 
 macOS/Linux | Windows
 --- | ---
-[![Travis Badge](https://travis-ci.org/MyGithubUsername/JsonWrapperPlugin.svg?branch=master)](https://travis-ci.org/MyGithubUsername/JsonWrapperPlugin) | [![Build status](https://ci.appveyor.com/api/projects/status/github/MyGithubUsername/JsonWrapperPlugin?svg=true)](https://ci.appveyor.com/project/MyGithubUsername/JsonWrapperPlugin)
-[![Build History](https://buildstats.info/travisci/chart/MyGithubUsername/JsonWrapperPlugin)](https://travis-ci.org/MyGithubUsername/JsonWrapperPlugin/builds) | [![Build History](https://buildstats.info/appveyor/chart/MyGithubUsername/JsonWrapperPlugin)](https://ci.appveyor.com/project/MyGithubUsername/JsonWrapperPlugin)  
+[![Travis Badge](https://travis-ci.org/MyGithubUsername/BinaryDefense.JsonWrapper.svg?branch=master)](https://travis-ci.org/MyGithubUsername/BinaryDefense.JsonWrapper) | [![Build status](https://ci.appveyor.com/api/projects/status/github/MyGithubUsername/BinaryDefense.JsonWrapper?svg=true)](https://ci.appveyor.com/project/MyGithubUsername/BinaryDefense.JsonWrapper)
+[![Build History](https://buildstats.info/travisci/chart/MyGithubUsername/BinaryDefense.JsonWrapper)](https://travis-ci.org/MyGithubUsername/BinaryDefense.JsonWrapper/builds) | [![Build History](https://buildstats.info/appveyor/chart/MyGithubUsername/BinaryDefense.JsonWrapper)](https://ci.appveyor.com/project/MyGithubUsername/BinaryDefense.JsonWrapper)  
 
 ## NuGet 
 
 Package | Stable | Prerelease
 --- | --- | ---
-JsonWrapperPlugin | [![NuGet Badge](https://buildstats.info/nuget/JsonWrapperPlugin)](https://www.nuget.org/packages/JsonWrapperPlugin/) | [![NuGet Badge](https://buildstats.info/nuget/JsonWrapperPlugin?includePreReleases=true)](https://www.nuget.org/packages/JsonWrapperPlugin/)
+BinaryDefense.JsonWrapper | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper/)
 
 ---
 

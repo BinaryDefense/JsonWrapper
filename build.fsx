@@ -44,8 +44,8 @@ let environVarAsBoolOrDefault varName defaultValue =
 // Metadata and Configuration
 //-----------------------------------------------------------------------------
 
-let productName = "JsonWrapperPlugin"
-let sln = "JsonWrapperPlugin.sln"
+let productName = "BinaryDefense.JsonWrapper"
+let sln = "BinaryDefense.JsonWrapper.sln"
 
 
 let srcCodeGlob =
@@ -74,8 +74,8 @@ let docsDir = __SOURCE_DIRECTORY__  @@ "docs"
 let docsSrcDir = __SOURCE_DIRECTORY__  @@ "docsSrc"
 let docsToolDir = __SOURCE_DIRECTORY__ @@ "docsTool"
 
-let gitOwner = "MyGithubUsername"
-let gitRepoName = "JsonWrapperPlugin"
+let gitOwner = "BinaryDefense"
+let gitRepoName = "BinaryDefense.JsonWrapper"
 
 let gitHubRepoUrl = sprintf "https://github.com/%s/%s" gitOwner gitRepoName
 

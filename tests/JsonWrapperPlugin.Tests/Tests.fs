@@ -30,6 +30,7 @@ let looseSerializer, strictSerializer =
   let loose, strict = JsonSerializer.CreateDefault looseSettings, JsonSerializer.CreateDefault strictSettings
   loose, strict
 
+
 [<Tests>]
 let simpleTests =
     testList "simple schema" [

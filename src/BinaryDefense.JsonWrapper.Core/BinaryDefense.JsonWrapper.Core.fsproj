@@ -1,7 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <DebugType>embedded</DebugType>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Title>BinaryDefense.JsonWrapper.Core</Title>
+    <Description>Holds the core types associated with BinaryDefense.Myriad.Plugins.JsonWrapper</Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\paket-files\baronfel\Newtonsoft.Json.FSharp.Idiomatic\src\Newtonsoft.Json.FSharp.Idiomatic\Newtonsoft.Json.FSharp.Idiomatic.fs">

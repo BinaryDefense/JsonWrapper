@@ -9,8 +9,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <Title>BinaryDefense.Myriad.Plugins.JsonWrapper</Title>
-    <Description>JsonWrapperPlugin does the thing!</Description>
-
+    <Description>A plugin for Myriad for generating static lossless wrappers around JToken given a schema.</Description>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <Optimize>true</Optimize>
@@ -19,7 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Library.fs" />
+    <Compile Include="BinaryDefense.Myriad.Plugins.JsonWrapper.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="build\BinaryDefense.Myriad.Plugins.JsonWrapper.props">
