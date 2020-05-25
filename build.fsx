@@ -104,8 +104,9 @@ let githubToken = Environment.environVarOrNone "GITHUB_TOKEN"
 Option.iter(TraceSecrets.register "<GITHUB_TOKEN>" )
 
 
-let nugetToken = Environment.environVarOrNone "NUGET_TOKEN"
-Option.iter(TraceSecrets.register "<NUGET_TOKEN>")
+let ``BD_NUGET_TOKEN`` = "BD_NUGET_TOKEN"
+let nugetToken = Environment.environVarOrNone ``BD_NUGET_TOKEN``
+nugetToken |> Option.iter (fun n -> TraceSecrets.register ``BD_NUGET_TOKEN`` n)
 
 //-----------------------------------------------------------------------------
 // Helpers
@@ -785,7 +786,7 @@ Target.create "ReleaseDocs" releaseDocs
     ==> "DotnetTest"
     =?> ("GenerateCoverageReport", not disableCodeCoverage)
     ==> "DotnetPack"
-    ==> "SourceLinkTest"
+    // ==> "SourceLinkTest"
     ==> "PublishToNuGet"
     ==> "GitRelease"
     ==> "GitHubRelease"
