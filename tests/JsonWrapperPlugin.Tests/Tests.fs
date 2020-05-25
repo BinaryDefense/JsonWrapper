@@ -14,21 +14,16 @@ let scrubDefaultDUConverter (s: System.Collections.Generic.IList<JsonConverter>)
     |> Option.iter (s.Remove >> ignore)
 
 // Serializer Settings
-// If you change any of these, you need to decide if they also need to be applied to the Marten configurations. (see Server/Collection boostrapping)
 let converters = Converters.recommendedConverters
 
 let serializationSettings requireAllProps =
     let s = JsonSerializerSettings()
     scrubDefaultDUConverter s.Converters
     for c in converters do s.Converters.Add c
-    if requireAllProps
-    then s.MissingMemberHandling <- MissingMemberHandling.Error
     s
 
-let looseSettings, strictSettings = serializationSettings false, serializationSettings true
-let looseSerializer, strictSerializer =
-  let loose, strict = JsonSerializer.CreateDefault looseSettings, JsonSerializer.CreateDefault strictSettings
-  loose, strict
+let looseSettings = serializationSettings false
+let looseSerializer =JsonSerializer.CreateDefault looseSettings
 
 
 [<Tests>]

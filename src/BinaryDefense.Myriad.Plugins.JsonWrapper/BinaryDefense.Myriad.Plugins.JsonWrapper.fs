@@ -239,9 +239,9 @@ module internal Create =
 
 
         let createCtor =
-            let arg1 = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent JToken.nameLongIdent)
-            let arg2 = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
-            DSL.createCtor [arg1; arg2;]
+            let jtokenArg = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent JToken.nameLongIdent)
+            let serializerArg = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
+            DSL.createCtor [jtokenArg; serializerArg;]
 
         let createGetterSynValdatea  =
             let memberFlags : MemberFlags = {
@@ -551,7 +551,7 @@ module internal Create =
         SynModuleDecl.CreateType(info, members)
 
 
-    let createRecordModule (namespaceId: LongIdent) (typeDefn: SynTypeDefn) =
+    let createJsonWrapperClass (namespaceId: LongIdent) (typeDefn: SynTypeDefn) =
         let (TypeDefn(synComponentInfo, synTypeDefnRepr, _members, _range)) = typeDefn
         let (ComponentInfo(_attributes, _typeParams, _constraints, recordId, _doc, _preferPostfix, _access, _range)) = synComponentInfo
 
@@ -579,12 +579,12 @@ type JsonWrapperGenerator() =
     interface IMyriadGenerator with
         member __.Generate(namespace', ast: ParsedInput) =
             let namespaceAndrecords = Ast.extractRecords ast
-            let modules =
+            let classes =
                 namespaceAndrecords
                 |> List.collect (fun (ns, records) ->
                                     records
                                     |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
-                                    |> List.collect (Create.createRecordModule ns))
+                                    |> List.collect (Create.createJsonWrapperClass ns))
 
 
 
@@ -600,7 +600,7 @@ type JsonWrapperGenerator() =
                         IsRecursive = true
                         Declarations = [
                                 yield! openNamespaces
-                                yield! modules
+                                yield! classes
                             ] }
 
             namespaceOrModule

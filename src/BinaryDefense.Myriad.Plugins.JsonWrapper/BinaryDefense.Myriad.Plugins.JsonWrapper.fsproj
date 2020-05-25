@@ -9,7 +9,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <Title>BinaryDefense.Myriad.Plugins.JsonWrapper</Title>
-    <Description>A plugin for Myriad for generating static lossless wrappers around JToken given a schema.</Description>
+    <Description>A plugin for [Myriad](https://github.com/MoiraeSoftware/myriad) for generating statically typed lossless wrappers around JToken given a schema.</Description>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <Optimize>true</Optimize>

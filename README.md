@@ -1,6 +1,131 @@
 # BinaryDefense.JsonWrapper
 
-[Enter useful description for BinaryDefense.JsonWrapper]
+## What
+
+A plugin for [Myriad](https://github.com/MoiraeSoftware/myriad) for generating statically typed lossless wrappers around JToken given a schema.
+
+## Why
+
+When serializing JSON directly into known record types, this can cause the underlying dataset to be lost. Given a JSON object:
+
+```json
+{
+    "Name" : "James Kirk",
+    "Age"  : 32
+}
+```
+
+and a [record type](https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/records):
+
+```fsharp
+
+type Person = {
+    Name : string
+    Age : uint32
+}
+```
+
+serializing is fine. However, if the underlying json adds more information in it's payload such as: 
+
+```json
+{
+    "Name" : "James Kirk",
+    "Age"  : 32,
+    "UniformColor": "Gold"
+}
+```
+
+If that type is then serialized and saved somewhere, our record type will lose the `UniformColor` field, causing this to be a lossy conversion.
+
+This Myriad plugin will instead generate [a class](https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/classes) given a record type as a schema.
+
+## How
+
+Add `BinaryDefense.Myriad.Plugins.JsonWrapper` to your project. 
+
+Given our record above as a schema, we need to add the attribute `[<Generator.JsonWrapper>]` to it.
+
+```fsharp
+[<Generator.JsonWrapper>]
+type Person = {
+    Name : string
+    Age : uint32
+}
+```
+
+Additionally, an entry to the `fsproj` file must be added:
+
+```xml
+<Compile Include="MyGeneratedFile.fs">
+    <MyriadFile>MyTypes.fs</MyriadFile>
+    <MyriadNameSpace>GeneratedNamespace</MyriadNameSpace>
+</Compile>
+```
+
+`MyTypes.fs` is where the `Person` record type lives. `MyGeneratedFile.fs` will be the file generated with the output. `GeneratedNamespace` will be the namespace the generated code lives in. On build, Myriad [will generate the code](https://github.com/MoiraeSoftware/myriad#msbuild-usage.)  An example of it's output:
+
+```fsharp
+type Person(jtoken: JToken, serializer: JsonSerializer) =
+    member this.Name
+        with get () =
+            let selectedToken = jtoken.["Name"]
+            selectedToken.ToObject<string> serializer
+        and set (newValue: string) =
+            jtoken.["Name"] <- JToken.FromObject(newValue, serializer)
+
+    member this.Age
+        with get () =
+            let selectedToken = jtoken.["Age"]
+            selectedToken.ToObject<uint32> serializer
+        and set (newValue: uint32) =
+            jtoken.["Age"] <- JToken.FromObject(newValue, serializer)
+
+    override this.GetHashCode () = jtoken.GetHashCode()
+
+    override this.Equals(objToCompare: obj) =
+        match objToCompare with
+        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+        | _ -> false
+
+    ///This allows the class to be pattern matched against
+    member this.Deconstruct(Name: outref<int>, Age: outref<string>) =
+        Name <- this.Name
+        Age <- this.Age
+
+    interface IHaveJToken with
+        override this.InnerData = jtoken
+```
+
+When using this type, you'll need to also add [custom converters](https://www.newtonsoft.com/json/help/html/CustomJsonConverter.htm) to the JsonSerializer you are using throughout your application.  
+
+```fsharp
+let converters = Converters.recommendedConverters
+
+let serializationSettings requireAllProps =
+    let s = JsonSerializerSettings()
+    scrubDefaultDUConverter s.Converters
+    for c in converters do s.Converters.Add c
+    s
+
+let looseSettings = serializationSettings false
+let looseSerializer =JsonSerializer.CreateDefault looseSettings
+```
+
+This will be using the [IHaveJTokenConverter](src/BinaryDefense.JsonWrapper.Core/BinaryDefense.JsonWrapper.Core.fs) to ensure the serialization is lossless.
+
+
+Additional reading on this topic: 
+
+- [Event Sourcing Versioning](https://leanpub.com/esversioning/read#leanpub-auto-wrapper)
+- [Serialization is lossy](https://web.archive.org/web/20160913235956/http://kellabyte.com/2013/05/02/serialization-is-lossy/)
+
+### Features
+
+- Lossless
+- Override backing field name
+- Enforce Required fields
+- Destructuring
+- Structural equals
 
 ---
 
@@ -8,14 +133,15 @@
 
 macOS/Linux | Windows
 --- | ---
-[![Travis Badge](https://travis-ci.org/MyGithubUsername/BinaryDefense.JsonWrapper.svg?branch=master)](https://travis-ci.org/MyGithubUsername/BinaryDefense.JsonWrapper) | [![Build status](https://ci.appveyor.com/api/projects/status/github/MyGithubUsername/BinaryDefense.JsonWrapper?svg=true)](https://ci.appveyor.com/project/MyGithubUsername/BinaryDefense.JsonWrapper)
-[![Build History](https://buildstats.info/travisci/chart/MyGithubUsername/BinaryDefense.JsonWrapper)](https://travis-ci.org/MyGithubUsername/BinaryDefense.JsonWrapper/builds) | [![Build History](https://buildstats.info/appveyor/chart/MyGithubUsername/BinaryDefense.JsonWrapper)](https://ci.appveyor.com/project/MyGithubUsername/BinaryDefense.JsonWrapper)  
+[![Travis Badge](https://travis-ci.org/BinaryDefense/BinaryDefense.JsonWrapper.svg?branch=master)](https://travis-ci.org/BinaryDefense/BinaryDefense.JsonWrapper) | [![Build status](https://ci.appveyor.com/api/projects/status/github/BinaryDefense/BinaryDefense.JsonWrapper?svg=true)](https://ci.appveyor.com/project/BinaryDefense/BinaryDefense.JsonWrapper)
+[![Build History](https://buildstats.info/travisci/chart/BinaryDefense/BinaryDefense.JsonWrapper)](https://travis-ci.org/BinaryDefense/BinaryDefense.JsonWrapper/builds) | [![Build History](https://buildstats.info/appveyor/chart/BinaryDefense/BinaryDefense.JsonWrapper)](https://ci.appveyor.com/project/BinaryDefense/BinaryDefense.JsonWrapper)  
 
 ## NuGet 
 
 Package | Stable | Prerelease
 --- | --- | ---
-BinaryDefense.JsonWrapper | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper/)
+BinaryDefense.JsonWrapper.Core | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper.Core/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper.Core?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper.Core/)
+BinaryDefense.Myriad.Plugins.JsonWrapper | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.Myriad.Plugins.JsonWrapper)](https://www.nuget.org/packages/BinaryDefense.Myriad.Plugins.JsonWrapper/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.Myriad.Plugins.JsonWrapper?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.Myriad.Plugins.JsonWrapper/)
 
 ---
 

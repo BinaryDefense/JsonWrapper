@@ -2,12 +2,12 @@
     <PropertyGroup>
         <!-- summary is not migrated from project.json, but you can use the <Description> property for that if needed. -->
         <PackageTags>f#, fsharp</PackageTags>
-        <PackageProjectUrl>https://github.com/MyGithubUsername/BinaryDefense.JsonWrapper</PackageProjectUrl>
-        <PackageLicenseUrl>https://github.com/MyGithubUsername/BinaryDefense.JsonWrapper/blob/master/LICENSE.md</PackageLicenseUrl>
+        <PackageProjectUrl>https://github.com/BinaryDefense/BinaryDefense.JsonWrapper</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/BinaryDefense/BinaryDefense.JsonWrapper/blob/master/LICENSE.md</PackageLicenseUrl>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <RepositoryType>git</RepositoryType>
-        <Authors>MyGithubUsername</Authors>
-        <RepositoryUrl>https://github.com/MyGithubUsername/BinaryDefense.JsonWrapper</RepositoryUrl>
+        <Authors>BinaryDefense</Authors>
+        <RepositoryUrl>https://github.com/BinaryDefense/BinaryDefense.JsonWrapper</RepositoryUrl>
         <!-- owners is not supported in MSBuild -->
     </PropertyGroup>
 </Project>
