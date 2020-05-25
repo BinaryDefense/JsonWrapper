@@ -101,14 +101,15 @@ When using this type, you'll need to also add [custom converters](https://www.ne
 ```fsharp
 let converters = Converters.recommendedConverters
 
-let serializationSettings requireAllProps =
+let serializationSettings =
     let s = JsonSerializerSettings()
     scrubDefaultDUConverter s.Converters
     for c in converters do s.Converters.Add c
     s
 
-let looseSettings = serializationSettings false
-let looseSerializer =JsonSerializer.CreateDefault looseSettings
+let jsonSettings = serializationSettings
+let jsonSerializer =JsonSerializer.CreateDefault looseSettings
+
 ```
 
 This will be using the [IHaveJTokenConverter](src/BinaryDefense.JsonWrapper.Core/BinaryDefense.JsonWrapper.Core.fs) to ensure the serialization is lossless.

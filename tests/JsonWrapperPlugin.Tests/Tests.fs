@@ -16,14 +16,14 @@ let scrubDefaultDUConverter (s: System.Collections.Generic.IList<JsonConverter>)
 // Serializer Settings
 let converters = Converters.recommendedConverters
 
-let serializationSettings requireAllProps =
+let serializationSettings =
     let s = JsonSerializerSettings()
     scrubDefaultDUConverter s.Converters
     for c in converters do s.Converters.Add c
     s
 
-let looseSettings = serializationSettings false
-let looseSerializer =JsonSerializer.CreateDefault looseSettings
+let jsonSettings = serializationSettings
+let jsonSerializer =JsonSerializer.CreateDefault jsonSettings
 
 
 [<Tests>]
@@ -39,7 +39,7 @@ let simpleTests =
         testCase "Gets keys it knows about" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = SimpleSchema(jtoken, looseSerializer)
+            let test1 = SimpleSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one 42 ""
             Expect.equal test1.two "Hitchhikers Guide" ""
@@ -47,7 +47,7 @@ let simpleTests =
         testCase "Set keys works" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = SimpleSchema(jtoken, looseSerializer)
+            let test1 = SimpleSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one 42 ""
             test1.one <- 100
@@ -57,7 +57,7 @@ let simpleTests =
         testCase "Deconstruct" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = SimpleSchema(jtoken, looseSerializer)
+            let test1 = SimpleSchema(jtoken, jsonSerializer)
             let foo = System.Guid.Parse("f971a6c0-ed00-46e5-b657-3fea2e368ba9")
             match test1.Deconstruct() with
             | (42, "Hitchhikers Guide", foo) -> ()
@@ -77,7 +77,7 @@ let jsonPropertyTests =
         testCase "Gets keys supplied by user" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = DifferentBackingFieldSchema(jtoken, looseSerializer)
+            let test1 = DifferentBackingFieldSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one 9001 ""
             Expect.equal test1.two -1000 ""
@@ -85,7 +85,7 @@ let jsonPropertyTests =
         testCase "Set keys works" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = DifferentBackingFieldSchema(jtoken, looseSerializer)
+            let test1 = DifferentBackingFieldSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one 9001 ""
             test1.one <- 100
@@ -110,7 +110,7 @@ let nullablePropertyFieldExistTests =
         testCase "Gets keys supplied by user" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = NullableFieldSchema(jtoken, looseSerializer)
+            let test1 = NullableFieldSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one nullInt ""
             Expect.equal test1.two null ""
@@ -118,7 +118,7 @@ let nullablePropertyFieldExistTests =
         testCase "Set keys works" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = NullableFieldSchema(jtoken, looseSerializer)
+            let test1 = NullableFieldSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one nullInt ""
             test1.one <- nullable 100
@@ -142,7 +142,7 @@ let nullablePropertyFieldDoesNotExistTests =
             let jtoken = JToken.Parse jsonStr
 
             let action () =
-                let test1 = NullableMissingFieldSchema(jtoken, looseSerializer)
+                let test1 = NullableMissingFieldSchema(jtoken, jsonSerializer)
 
                 Expect.equal test1.one nullInt ""
                 Expect.equal test1.two -1000 ""
@@ -152,7 +152,7 @@ let nullablePropertyFieldDoesNotExistTests =
         testCase "Set keys works" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = NullableMissingFieldSchema(jtoken, looseSerializer)
+            let test1 = NullableMissingFieldSchema(jtoken, jsonSerializer)
 
             test1.one <- nullable 100
             Expect.equal test1.one (nullable 100) ""
@@ -175,7 +175,7 @@ let optionPropertyTests =
         testCase "Gets keys supplied by user" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = OptionalFieldSchema(jtoken, looseSerializer)
+            let test1 = OptionalFieldSchema(jtoken, jsonSerializer)
 
             Expect.equal test1.one None ""
             Expect.equal test1.two -1000 ""
@@ -183,11 +183,11 @@ let optionPropertyTests =
         testCase "Set keys works" <| fun _ ->
             let jtoken = JToken.Parse jsonStr
 
-            let test1 = OptionalFieldSchema(jtoken, looseSerializer)
+            let test1 = OptionalFieldSchema(jtoken, jsonSerializer)
 
             test1.one <- Some 100
             Expect.equal test1.one (Some 100) ""
-            Expect.equal (jtoken.["one"].ToObject<_>(looseSerializer)) (Some 100) ""
+            Expect.equal (jtoken.["one"].ToObject<_>(jsonSerializer)) (Some 100) ""
     ]
 
 
@@ -210,10 +210,10 @@ let traversalTests =
         testCase "Gets keys supplied by user" <| fun _ ->
             let outerJToken = JToken.Parse jsonStr
 
-            let outer = OuterType(outerJToken, looseSerializer)
+            let outer = OuterType(outerJToken, jsonSerializer)
 
             let innerJToken = JToken.Parse innerJsonStr
-            let innerExpected = InnerType(innerJToken, looseSerializer)
+            let innerExpected = InnerType(innerJToken, jsonSerializer)
             let innerActual = outer.foo
 
             Expect.equal innerActual.one innerExpected.one ""
@@ -224,7 +224,7 @@ let traversalTests =
         testCase "Deconstruct" <| fun _ ->
             let outerJToken = JToken.Parse jsonStr
 
-            let outer = OuterType(outerJToken, looseSerializer)
+            let outer = OuterType(outerJToken, jsonSerializer)
             match outer.Deconstruct() with
             | ((None,"-1000"), 10) -> ()
             | fallthru -> failwithf "Couldn't match %A" fallthru
