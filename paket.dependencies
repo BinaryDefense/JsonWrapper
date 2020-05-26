@@ -11,7 +11,6 @@ nuget Microsoft.NET.Test.Sdk 15.7.2
 nuget altcover ~> 6
 nuget Myriad.Core
 nuget Myriad.Sdk
-nuget Myriad.Plugins
 nuget Newtonsoft.Json
 nuget fsharp.compiler.service
 github baronfel/Newtonsoft.Json.FSharp.Idiomatic src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs
