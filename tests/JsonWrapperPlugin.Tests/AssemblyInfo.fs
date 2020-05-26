@@ -5,19 +5,19 @@ open System.Reflection
 [<assembly: AssemblyTitleAttribute("JsonWrapperPlugin.Tests")>]
 [<assembly: AssemblyProductAttribute("BinaryDefense.JsonWrapper")>]
 [<assembly: AssemblyVersionAttribute("0.1.0")>]
-[<assembly: AssemblyMetadataAttribute("ReleaseDate","2017-03-17T00:00:00.0000000")>]
+[<assembly: AssemblyMetadataAttribute("ReleaseDate","2020-05-25T00:00:00.0000000-04:00")>]
 [<assembly: AssemblyFileVersionAttribute("0.1.0")>]
 [<assembly: AssemblyInformationalVersionAttribute("0.1.0")>]
-[<assembly: AssemblyMetadataAttribute("ReleaseChannel","release")>]
-[<assembly: AssemblyMetadataAttribute("GitHash","16631e31433974cc1239286e90295985114bc1da")>]
+[<assembly: AssemblyMetadataAttribute("ReleaseChannel","beta")>]
+[<assembly: AssemblyMetadataAttribute("GitHash","d315af080825e2f1b2cc41d0e8f76597f1b55b82")>]
 do ()
 
 module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyTitle = "JsonWrapperPlugin.Tests"
     let [<Literal>] AssemblyProduct = "BinaryDefense.JsonWrapper"
     let [<Literal>] AssemblyVersion = "0.1.0"
-    let [<Literal>] AssemblyMetadata_ReleaseDate = "2017-03-17T00:00:00.0000000"
+    let [<Literal>] AssemblyMetadata_ReleaseDate = "2020-05-25T00:00:00.0000000-04:00"
     let [<Literal>] AssemblyFileVersion = "0.1.0"
     let [<Literal>] AssemblyInformationalVersion = "0.1.0"
-    let [<Literal>] AssemblyMetadata_ReleaseChannel = "release"
-    let [<Literal>] AssemblyMetadata_GitHash = "16631e31433974cc1239286e90295985114bc1da"
+    let [<Literal>] AssemblyMetadata_ReleaseChannel = "beta"
+    let [<Literal>] AssemblyMetadata_GitHash = "d315af080825e2f1b2cc41d0e8f76597f1b55b82"

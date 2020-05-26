@@ -4,12 +4,6 @@
 //------------------------------------------------------------------------------
 namespace rec DataSchema
 
-
-namespace rec DataSchema
-
-
-namespace rec DataSchema
-
 open Newtonsoft.Json.Linq
 open Newtonsoft.Json
 open BinaryDefense.JsonWrapper.Core
@@ -44,10 +38,10 @@ type SimpleSchema(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(one: outref<int>, two: outref<string>, three: outref<System.Guid>) =
-        one <- this.one
-        two <- this.two
-        three <- this.three
+    member this.Deconstruct(outone: outref<int>, outtwo: outref<string>, outthree: outref<System.Guid>) =
+        outone <- this.one
+        outtwo <- this.two
+        outthree <- this.three
 
     interface IHaveJToken with
         override this.InnerData = jtoken
@@ -75,9 +69,9 @@ type DifferentBackingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(one: outref<int>, two: outref<int>) =
-        one <- this.one
-        two <- this.two
+    member this.Deconstruct(outone: outref<int>, outtwo: outref<int>) =
+        outone <- this.one
+        outtwo <- this.two
 
     interface IHaveJToken with
         override this.InnerData = jtoken
@@ -105,9 +99,9 @@ type NullableFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(one: outref<System.Nullable<int>>, two: outref<string>) =
-        one <- this.one
-        two <- this.two
+    member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<string>) =
+        outone <- this.one
+        outtwo <- this.two
 
     interface IHaveJToken with
         override this.InnerData = jtoken
@@ -137,9 +131,9 @@ type NullableMissingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(one: outref<System.Nullable<int>>, two: outref<int>) =
-        one <- this.one
-        two <- this.two
+    member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<int>) =
+        outone <- this.one
+        outtwo <- this.two
 
     interface IHaveJToken with
         override this.InnerData = jtoken
@@ -167,9 +161,9 @@ type OptionalFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(one: outref<int option>, two: outref<int>) =
-        one <- this.one
-        two <- this.two
+    member this.Deconstruct(outone: outref<int option>, outtwo: outref<int>) =
+        outone <- this.one
+        outtwo <- this.two
 
     interface IHaveJToken with
         override this.InnerData = jtoken
@@ -197,9 +191,9 @@ type InnerType(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(one: outref<int option>, two: outref<string>) =
-        one <- this.one
-        two <- this.two
+    member this.Deconstruct(outone: outref<int option>, outtwo: outref<string>) =
+        outone <- this.one
+        outtwo <- this.two
 
     interface IHaveJToken with
         override this.InnerData = jtoken
@@ -227,9 +221,9 @@ type OuterType(jtoken: JToken, serializer: JsonSerializer) =
         | _ -> false
 
     ///This allows the class to be pattern matched against
-    member this.Deconstruct(foo: outref<int option * string>, count: outref<int>) =
-        foo <- this.foo.Deconstruct()
-        count <- this.count
+    member this.Deconstruct(outfoo: outref<int option * string>, outcount: outref<int>) =
+        outfoo <- this.foo.Deconstruct()
+        outcount <- this.count
 
     interface IHaveJToken with
         override this.InnerData = jtoken

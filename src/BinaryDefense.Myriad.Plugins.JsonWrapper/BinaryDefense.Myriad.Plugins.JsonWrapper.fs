@@ -469,7 +469,7 @@ module internal Create =
         /// Allows for pattern matching against properties
         let createDeconstruct =
             let deconstructMethodName ="Deconstruct"
-
+            let outField str = sprintf "out%s" str
             let memberArgs =
                 let arg argName fieldTy =
                     let create fieldTy =
@@ -485,7 +485,7 @@ module internal Create =
                 |> Seq.map(fun f ->
                     let rcd = f.ToRcd
                     let x = rcd.Id |> Option.get
-                    let argRcd = arg x.idText rcd.Type
+                    let argRcd = arg (outField x.idText) rcd.Type
                     argRcd
                 )
                 |> Seq.toList
@@ -515,7 +515,7 @@ module internal Create =
                             |> DSL.createInstanceMethodCallUnit
                         | None -> SynExpr.CreateLongIdent( LongIdentWithDots.Create [selfIden; fieldName ])
 
-                    SynExpr.LongIdentSet (LongIdentWithDots.CreateString fieldName, rightside, range0 )
+                    SynExpr.LongIdentSet (LongIdentWithDots.CreateString (outField fieldName), rightside, range0 )
                 )
                 |> DSL.sequentialExpressions
 
