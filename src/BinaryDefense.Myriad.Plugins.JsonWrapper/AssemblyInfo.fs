@@ -4,20 +4,20 @@ open System.Reflection
 
 [<assembly: AssemblyTitleAttribute("BinaryDefense.Myriad.Plugins.JsonWrapper")>]
 [<assembly: AssemblyProductAttribute("BinaryDefense.JsonWrapper")>]
-[<assembly: AssemblyVersionAttribute("0.1.0")>]
-[<assembly: AssemblyMetadataAttribute("ReleaseDate","2020-05-26T00:00:00.0000000-04:00")>]
-[<assembly: AssemblyFileVersionAttribute("0.1.0")>]
-[<assembly: AssemblyInformationalVersionAttribute("0.1.0")>]
+[<assembly: AssemblyVersionAttribute("0.1.1")>]
+[<assembly: AssemblyMetadataAttribute("ReleaseDate","2020-05-27T00:00:00.0000000-04:00")>]
+[<assembly: AssemblyFileVersionAttribute("0.1.1")>]
+[<assembly: AssemblyInformationalVersionAttribute("0.1.1")>]
 [<assembly: AssemblyMetadataAttribute("ReleaseChannel","beta")>]
-[<assembly: AssemblyMetadataAttribute("GitHash","0fdc94a755c30872e1abfef64fb1a08503abe96e")>]
+[<assembly: AssemblyMetadataAttribute("GitHash","dc13033f83b3f14f5d63728abf3c65a15db93cc4")>]
 do ()
 
 module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyTitle = "BinaryDefense.Myriad.Plugins.JsonWrapper"
     let [<Literal>] AssemblyProduct = "BinaryDefense.JsonWrapper"
-    let [<Literal>] AssemblyVersion = "0.1.0"
-    let [<Literal>] AssemblyMetadata_ReleaseDate = "2020-05-26T00:00:00.0000000-04:00"
-    let [<Literal>] AssemblyFileVersion = "0.1.0"
-    let [<Literal>] AssemblyInformationalVersion = "0.1.0"
+    let [<Literal>] AssemblyVersion = "0.1.1"
+    let [<Literal>] AssemblyMetadata_ReleaseDate = "2020-05-27T00:00:00.0000000-04:00"
+    let [<Literal>] AssemblyFileVersion = "0.1.1"
+    let [<Literal>] AssemblyInformationalVersion = "0.1.1"
     let [<Literal>] AssemblyMetadata_ReleaseChannel = "beta"
-    let [<Literal>] AssemblyMetadata_GitHash = "0fdc94a755c30872e1abfef64fb1a08503abe96e"
+    let [<Literal>] AssemblyMetadata_GitHash = "dc13033f83b3f14f5d63728abf3c65a15db93cc4"
