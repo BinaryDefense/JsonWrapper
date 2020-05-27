@@ -215,7 +215,7 @@ module MissingJsonFieldException =
 
 type ModuleTree =
 | Module of string * ModuleTree list
-| Class of SynTypeDefn
+| Class of ``namespace``: LongIdent * SynTypeDefn
 
 module ModuleTree =
 
@@ -230,7 +230,7 @@ module ModuleTree =
             | [] ->
                 let classes =
                     if remainingParts |> List.isEmpty then
-                        subFilePath |> List.map(Class)
+                        (snd subFilePath) |> List.map(fun c -> Class(fst subFilePath, c))
                     else
                         List.empty
                 Module(part, addPath subFilePath remainingParts classes )
@@ -241,14 +241,14 @@ module ModuleTree =
         ([], xs)
         ||> List.fold(fun state (moduleIdent, synTypeDefns) ->
             let pathParts = moduleIdent |> List.map(fun i -> i.idText)
-            addPath synTypeDefns pathParts state
+            addPath (moduleIdent, synTypeDefns) pathParts state
         )
 
 
 module internal Create =
 
     /// Keeps a map of known generated types and their Deconstruct out parameters.  Used in nesting Deconstructs.
-    let knownDeconstructs = new Dictionary<_,_>()
+    let knownDeconstructs = new List<string>()
 
     type GetterAccessor =
     /// The backing field can be missing on the JToken, should be used with Nullable or Option types
@@ -493,8 +493,8 @@ module internal Create =
         let getDeconstructType fieldTy =
             match fieldTy with
             | SynType.LongIdent ident ->
-                match knownDeconstructs.TryGetValue(ident.AsString) with
-                |(true ,v) -> Some v
+                match knownDeconstructs |> Seq.tryFind(fun (k : string) -> k.EndsWith ident.AsString)  with
+                | Some key -> Some key
                 | _ -> None
             | _ -> None
 
@@ -504,14 +504,10 @@ module internal Create =
             let outField str = sprintf "out%s" str
             let memberArgs =
                 let arg argName fieldTy =
-                    let create fieldTy =
-                        let named = SynPatRcd.CreateNamed(Ident.Create argName, SynPatRcd.CreateWild )
-                        let typ = SynType.CreateApp(SynType.CreateLongIdent "outref", [fieldTy], false )
-                        SynPatRcd.CreateTyped(named, typ)
+                    let named = SynPatRcd.CreateNamed(Ident.Create argName, SynPatRcd.CreateWild )
+                    let typ = SynType.CreateApp(SynType.CreateLongIdent "outref", [SynType.Anon(range0)], false )
+                    SynPatRcd.CreateTyped(named, typ)
 
-                    match getDeconstructType fieldTy with
-                    | Some fieldTy -> create fieldTy
-                    | None -> create fieldTy
 
                 fields
                 |> Seq.map(fun f ->
@@ -567,8 +563,8 @@ module internal Create =
                 )
                 |> DSL.createTypleSynType
 
-            // let fullTypeName = sprintf "%s.%s" (String.Join('.', parentNamespace)) parentName
-            knownDeconstructs.Add(parentName, synExprType)
+            let fullTypeName = sprintf "%s.%s" (String.Join('.', parentNamespace)) parentName
+            knownDeconstructs.Add(fullTypeName)
 
             SynMemberDefn.CreateMember(bindingRecord)
 
@@ -616,34 +612,29 @@ type JsonWrapperGenerator() =
                 |> List.map((fun (ident, records) -> String.Join('.', ident), records))
                 |> List.groupBy(fst)
                 |> List.map(fun (key, (xs)) ->
-                    let keys = xs |> Seq.map fst
-                    Ident.CreateLong(keys |> Seq.head), xs |> List.collect(snd)
+                    Ident.CreateLong(key), xs |> List.collect(snd)
                 )
-                // |> List.map (fun
 
             let moduleTrie =
-                ModuleTree.fromExtractRecords namespaceAndrecords
+                namespaceAndrecords
+                |> List.map(fun (key, rcds) ->
+                    key, rcds |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
+                )
+                |> ModuleTree.fromExtractRecords
 
-            // let classes =
-            //     namespaceAndrecords
-            //     |> List.collect (fun (ns, records) ->
-            //                         records
-            //                         |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
-            //                         |> List.collect (Create.createJsonWrapperClass ns))
-
-            let rec doIt (xs) =
-                ([], xs)
+            let rec createModulesAndClasses (moduleTree) =
+                ([], moduleTree)
                 ||> List.fold(fun state x ->
                     state @
                         match x with
                         | Module(name, mods) ->
                             [
                                 let moduleId = SynComponentInfoRcd.Create (Ident.CreateLong name)
-                                let decls = doIt mods
+                                let decls = createModulesAndClasses mods
                                 SynModuleDecl.CreateNestedModule(moduleId, decls)
                             ]
-                        | Class s ->
-                            Create.createJsonWrapperClass (Ident.CreateLong "Nested.OneThing") s
+                        | Class (ns, rcd) ->
+                            Create.createJsonWrapperClass ns rcd
                 )
 
 
@@ -660,7 +651,7 @@ type JsonWrapperGenerator() =
                         IsRecursive = true
                         Declarations = [
                                 yield! openNamespaces
-                                yield! doIt moduleTrie
+                                yield! createModulesAndClasses moduleTrie
                                 // yield! classes
                             ] }
 

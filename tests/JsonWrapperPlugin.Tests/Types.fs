@@ -5,7 +5,8 @@ open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
 open BinaryDefense.JsonWrapper.Core
 
-
+module consts =
+    let [<Literal>] not_one = "not_one"
 
 [<Generator.JsonWrapper>]
 type SimpleSchema = {
@@ -16,6 +17,7 @@ type SimpleSchema = {
 
 [<Generator.JsonWrapper>]
 type DifferentBackingFieldSchema = {
+    // [<JsonProperty(consts.not_one)>]
     [<JsonProperty("not_one")>]
     one: int
     two: int
@@ -67,7 +69,12 @@ module Nested =
         }
     module TwoThing =
         [<Generator.JsonWrapper>]
-        type Data3 = {
+        type Data = {
+            Fee : int
+        }
+        [<Generator.JsonWrapper>]
+        type Data2 = {
             Bar : string
             Another : OneThing.Data
+            Another22 : Data
         }

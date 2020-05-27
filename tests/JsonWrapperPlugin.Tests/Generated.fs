@@ -39,7 +39,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outone: outref<int>, outtwo: outref<string>, outthree: outref<System.Guid>) =
+        member this.Deconstruct(outone: outref<_>, outtwo: outref<_>, outthree: outref<_>) =
             outone <- this.one
             outtwo <- this.two
             outthree <- this.three
@@ -70,7 +70,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outone: outref<int>, outtwo: outref<int>) =
+        member this.Deconstruct(outone: outref<_>, outtwo: outref<_>) =
             outone <- this.one
             outtwo <- this.two
 
@@ -100,7 +100,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<string>) =
+        member this.Deconstruct(outone: outref<_>, outtwo: outref<_>) =
             outone <- this.one
             outtwo <- this.two
 
@@ -132,7 +132,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<int>) =
+        member this.Deconstruct(outone: outref<_>, outtwo: outref<_>) =
             outone <- this.one
             outtwo <- this.two
 
@@ -162,7 +162,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outone: outref<int option>, outtwo: outref<int>) =
+        member this.Deconstruct(outone: outref<_>, outtwo: outref<_>) =
             outone <- this.one
             outtwo <- this.two
 
@@ -192,7 +192,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outone: outref<int option>, outtwo: outref<string>) =
+        member this.Deconstruct(outone: outref<_>, outtwo: outref<_>) =
             outone <- this.one
             outtwo <- this.two
 
@@ -222,7 +222,7 @@ module Example =
             | _ -> false
 
         ///This allows the class to be pattern matched against
-        member this.Deconstruct(outfoo: outref<int option * string>, outcount: outref<int>) =
+        member this.Deconstruct(outfoo: outref<_>, outcount: outref<_>) =
             outfoo <- this.foo.Deconstruct()
             outcount <- this.count
 
@@ -247,7 +247,7 @@ module Example =
                     | _ -> false
 
                 ///This allows the class to be pattern matched against
-                member this.Deconstruct(outFoo: outref<string>) = outFoo <- this.Foo
+                member this.Deconstruct(outFoo: outref<_>) = outFoo <- this.Foo
 
                 interface IHaveJToken with
                     override this.InnerData = jtoken
@@ -275,7 +275,7 @@ module Example =
                     | _ -> false
 
                 ///This allows the class to be pattern matched against
-                member this.Deconstruct(outFoo: outref<string>, outAnother: outref<string>) =
+                member this.Deconstruct(outFoo: outref<_>, outAnother: outref<_>) =
                     outFoo <- this.Foo
                     outAnother <- this.Another.Deconstruct()
 
@@ -283,7 +283,28 @@ module Example =
                     override this.InnerData = jtoken
 
         module TwoThing =
-            type Data3(jtoken: JToken, serializer: JsonSerializer) =
+            type Data(jtoken: JToken, serializer: JsonSerializer) =
+                member this.Fee
+                    with get () =
+                        let selectedToken = jtoken.["Fee"]
+                        selectedToken.ToObject<int> serializer
+                    and set (newValue: int) =
+                        jtoken.["Fee"] <- JToken.FromObject(newValue, serializer)
+
+                override this.GetHashCode () = jtoken.GetHashCode()
+
+                override this.Equals(objToCompare: obj) =
+                    match objToCompare with
+                    | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+                    | _ -> false
+
+                ///This allows the class to be pattern matched against
+                member this.Deconstruct(outFee: outref<_>) = outFee <- this.Fee
+
+                interface IHaveJToken with
+                    override this.InnerData = jtoken
+
+            type Data2(jtoken: JToken, serializer: JsonSerializer) =
                 member this.Bar
                     with get () =
                         let selectedToken = jtoken.["Bar"]
@@ -298,6 +319,13 @@ module Example =
                     and set (newValue: OneThing.Data) =
                         jtoken.["Another"] <- JToken.FromObject(newValue, serializer)
 
+                member this.Another22
+                    with get () =
+                        let selectedToken = jtoken.["Another22"]
+                        selectedToken.ToObject<Data> serializer
+                    and set (newValue: Data) =
+                        jtoken.["Another22"] <- JToken.FromObject(newValue, serializer)
+
                 override this.GetHashCode () = jtoken.GetHashCode()
 
                 override this.Equals(objToCompare: obj) =
@@ -306,9 +334,10 @@ module Example =
                     | _ -> false
 
                 ///This allows the class to be pattern matched against
-                member this.Deconstruct(outBar: outref<string>, outAnother: outref<OneThing.Data>) =
+                member this.Deconstruct(outBar: outref<_>, outAnother: outref<_>, outAnother22: outref<_>) =
                     outBar <- this.Bar
-                    outAnother <- this.Another
+                    outAnother <- this.Another.Deconstruct()
+                    outAnother22 <- this.Another22.Deconstruct()
 
                 interface IHaveJToken with
                     override this.InnerData = jtoken
