@@ -6,6 +6,7 @@ open DataSchema
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open BinaryDefense.JsonWrapper.Core
+open Myriad.Plugins
 
 
 let scrubDefaultDUConverter (s: System.Collections.Generic.IList<JsonConverter>) =
@@ -231,3 +232,119 @@ let traversalTests =
     ]
 
 
+open FSharp.Compiler.SyntaxTree
+open FsAst
+
+let rec flatten (modules : ModuleTree list) =
+    modules
+    |> List.collect(fun m ->
+        [
+            yield m
+            yield!
+                match m with
+                | Module(_, ms) ->
+                    flatten ms
+                | Class _ ->
+                    []
+        ]
+    )
+
+
+// search tags: debug, debugger, attach
+module Debugging =
+  let waitForDebuggerAttached (programName) =
+#if DEBUG
+    if not(System.Diagnostics.Debugger.IsAttached) then
+      printfn "Please attach a debugger for %s, PID: %d" programName (System.Diagnostics.Process.GetCurrentProcess().Id)
+    while not(System.Diagnostics.Debugger.IsAttached) do
+      System.Threading.Thread.Sleep(100)
+    System.Diagnostics.Debugger.Break()
+#else
+    ()
+#endif
+
+
+let rec filter predicate (modules : ModuleTree list) =
+    modules
+    |> flatten
+    |> List.filter(predicate)
+
+let filterModuleByName name (modules : ModuleTree list)  =
+    let predicate ``module`` =
+        match ``module`` with
+        | Module(s, _) -> s = name
+        | Class _ -> false
+    filter predicate modules
+    |> Seq.tryHead
+
+
+let fromList  (xs : list<LongIdent * list<_>>) =
+    let rec addPath subFilePath parts nodes =
+        match parts with
+        | [] -> nodes
+        | hp :: tp ->
+            addHeadPath subFilePath hp tp nodes
+    and addHeadPath subFilePath (part : string) remainingParts (nodes : ModuleTree list)=
+        match nodes with
+        | [] ->
+            let classes =
+                if remainingParts |> List.isEmpty then
+                    subFilePath |> List.map(fun _ -> Class "")
+                else
+                    List.empty
+            Module(part, addPath subFilePath remainingParts classes )
+            |> List.singleton
+        | Module(title, subnodes) :: nodes when title = part -> Module(title, addPath subFilePath remainingParts subnodes ) :: nodes
+        | hn :: tn -> hn :: addHeadPath subFilePath part remainingParts tn
+
+    ([], xs)
+    ||> List.fold(fun state (moduleIdent, synTypeDefns) ->
+        let pathParts = moduleIdent |> List.map(fun i -> i.idText)
+        addPath synTypeDefns pathParts state
+    )
+
+
+// let createSynTypeDefn () =
+//     SynComponentInfo.ComponentInfo()
+//     SynTypeDefn.TypeDefn
+
+[<Tests>]
+let moduleTreeTests =
+    ftestList "ModuleTree tests" [
+        testCase "test 1" <| fun () ->
+            let input : list<LongIdent * list<_>>= [
+                    (Ident.CreateLong "Nested.OneThing"),
+                    [
+                        "LOL"
+                    ]
+                ]
+            let expected = [
+                ModuleTree.Module("Nested",[
+                    ModuleTree.Module("OneThing", [
+                        ModuleTree.Class ""
+                    ])
+                ])
+            ]
+
+            let actual = fromList input
+            Expect.equal actual expected ""
+
+        testCase "test 2" <| fun () ->
+            let input : list<LongIdent * list<_>>= [
+                    (Ident.CreateLong "Nested.OneThing"), ["lol"]
+                    (Ident.CreateLong "Nested.TwoThing"), ["nope"]
+                ]
+            let expected = [
+                ModuleTree.Module("Nested",[
+                    ModuleTree.Module("OneThing", [
+                        ModuleTree.Class ""
+                    ])
+                    ModuleTree.Module("TwoThing", [
+                        ModuleTree.Class ""
+                    ])
+                ])
+            ]
+            // Debugging.waitForDebuggerAttached "test2"
+            let actual = fromList input
+            Expect.equal actual expected ""
+    ]

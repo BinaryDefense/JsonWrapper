@@ -2,10 +2,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>preview</LangVersion>
-    <!-- <MyriadSdkVerboseOutput>true</MyriadSdkVerboseOutput>
-    <MyriadSdkWaitForDebugger>true</MyriadSdkWaitForDebugger> -->
+    <!-- <MyriadSdkVerboseOutput>true</MyriadSdkVerboseOutput> -->
+    <!-- <MyriadSdkWaitForDebugger>true</MyriadSdkWaitForDebugger> -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />

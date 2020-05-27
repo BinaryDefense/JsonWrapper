@@ -227,3 +227,4 @@ type OuterType(jtoken: JToken, serializer: JsonSerializer) =
 
     interface IHaveJToken with
         override this.InnerData = jtoken
+

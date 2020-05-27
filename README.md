@@ -108,7 +108,7 @@ let serializationSettings =
     s
 
 let jsonSettings = serializationSettings
-let jsonSerializer =JsonSerializer.CreateDefault looseSettings
+let jsonSerializer =JsonSerializer.CreateDefault jsonSettings
 
 ```
 

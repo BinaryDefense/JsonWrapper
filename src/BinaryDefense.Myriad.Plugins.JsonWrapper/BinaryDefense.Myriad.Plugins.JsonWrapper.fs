@@ -213,6 +213,10 @@ module MissingJsonFieldException =
         let args = DSL.createParenedTuple [fieldName; jtoken]
         SynExpr.CreateApp(func, args)
 
+type ModuleTree =
+| Module of string * ModuleTree list
+| Class of string
+
 module internal Create =
 
     /// Keeps a map of known generated types and their Deconstruct out parameters.  Used in nesting Deconstructs.
@@ -224,7 +228,7 @@ module internal Create =
     /// The backing field must exist on the JToken, should be used with Nullable or Option types
     | MustExist
 
-    let createWrapperClass  (parent: LongIdent) (fields: SynField list) =
+    let createWrapperClass (parentNamespace : LongIdent) (parent: LongIdent) (fields: SynField list) =
 
         let jsonSerializerFullName = typeof<JsonSerializer>.Name
         let jsonSerializerFullNameLongIdent = LongIdentWithDots.CreateString  jsonSerializerFullName
@@ -535,6 +539,7 @@ module internal Create =
                 )
                 |> DSL.createTypleSynType
 
+            // let fullTypeName = sprintf "%s.%s" (String.Join('.', parentNamespace)) parentName
             knownDeconstructs.Add(parentName, synExprType)
 
             SynMemberDefn.CreateMember(bindingRecord)
@@ -558,7 +563,7 @@ module internal Create =
         match synTypeDefnRepr with
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(_accessibility, recordFields, _recordRange), _range) ->
 
-            let createWrapperClass = createWrapperClass recordId recordFields
+            let createWrapperClass = createWrapperClass namespaceId  recordId recordFields
 
             let declarations = [
                 createWrapperClass
@@ -579,6 +584,8 @@ type JsonWrapperGenerator() =
     interface IMyriadGenerator with
         member __.Generate(namespace', ast: ParsedInput) =
             let namespaceAndrecords = Ast.extractRecords ast
+
+
             let classes =
                 namespaceAndrecords
                 |> List.collect (fun (ns, records) ->
