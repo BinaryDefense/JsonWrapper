@@ -215,7 +215,35 @@ module MissingJsonFieldException =
 
 type ModuleTree =
 | Module of string * ModuleTree list
-| Class of string
+| Class of SynTypeDefn
+
+module ModuleTree =
+
+    let fromExtractRecords  (xs : list<LongIdent * list<_>>) =
+        let rec addPath subFilePath parts nodes =
+            match parts with
+            | [] -> nodes
+            | hp :: tp ->
+                addHeadPath subFilePath hp tp nodes
+        and addHeadPath subFilePath (part : string) remainingParts (nodes : ModuleTree list)=
+            match nodes with
+            | [] ->
+                let classes =
+                    if remainingParts |> List.isEmpty then
+                        subFilePath |> List.map(Class)
+                    else
+                        List.empty
+                Module(part, addPath subFilePath remainingParts classes )
+                |> List.singleton
+            | Module(title, subnodes) :: nodes when title = part -> Module(title, addPath subFilePath remainingParts subnodes ) :: nodes
+            | hn :: tn -> hn :: addHeadPath subFilePath part remainingParts tn
+
+        ([], xs)
+        ||> List.fold(fun state (moduleIdent, synTypeDefns) ->
+            let pathParts = moduleIdent |> List.map(fun i -> i.idText)
+            addPath synTypeDefns pathParts state
+        )
+
 
 module internal Create =
 
@@ -583,15 +611,40 @@ type JsonWrapperGenerator() =
 
     interface IMyriadGenerator with
         member __.Generate(namespace', ast: ParsedInput) =
-            let namespaceAndrecords = Ast.extractRecords ast
+            let namespaceAndrecords =
+                Ast.extractRecords ast
+                |> List.map((fun (ident, records) -> String.Join('.', ident), records))
+                |> List.groupBy(fst)
+                |> List.map(fun (key, (xs)) ->
+                    let keys = xs |> Seq.map fst
+                    Ident.CreateLong(keys |> Seq.head), xs |> List.collect(snd)
+                )
+                // |> List.map (fun
 
+            let moduleTrie =
+                ModuleTree.fromExtractRecords namespaceAndrecords
 
-            let classes =
-                namespaceAndrecords
-                |> List.collect (fun (ns, records) ->
-                                    records
-                                    |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
-                                    |> List.collect (Create.createJsonWrapperClass ns))
+            // let classes =
+            //     namespaceAndrecords
+            //     |> List.collect (fun (ns, records) ->
+            //                         records
+            //                         |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
+            //                         |> List.collect (Create.createJsonWrapperClass ns))
+
+            let rec doIt (xs) =
+                ([], xs)
+                ||> List.fold(fun state x ->
+                    state @
+                        match x with
+                        | Module(name, mods) ->
+                            [
+                                let moduleId = SynComponentInfoRcd.Create (Ident.CreateLong name)
+                                let decls = doIt mods
+                                SynModuleDecl.CreateNestedModule(moduleId, decls)
+                            ]
+                        | Class s ->
+                            Create.createJsonWrapperClass (Ident.CreateLong "Nested.OneThing") s
+                )
 
 
 
@@ -607,7 +660,8 @@ type JsonWrapperGenerator() =
                         IsRecursive = true
                         Declarations = [
                                 yield! openNamespaces
-                                yield! classes
+                                yield! doIt moduleTrie
+                                // yield! classes
                             ] }
 
             namespaceOrModule

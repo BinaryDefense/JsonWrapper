@@ -8,223 +8,307 @@ open Newtonsoft.Json.Linq
 open Newtonsoft.Json
 open BinaryDefense.JsonWrapper.Core
 
-type SimpleSchema(jtoken: JToken, serializer: JsonSerializer) =
-    member this.one
-        with get () =
-            let selectedToken = jtoken.["one"]
-            selectedToken.ToObject<int> serializer
-        and set (newValue: int) =
-            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
+module Example =
+    type SimpleSchema(jtoken: JToken, serializer: JsonSerializer) =
+        member this.one
+            with get () =
+                let selectedToken = jtoken.["one"]
+                selectedToken.ToObject<int> serializer
+            and set (newValue: int) =
+                jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
-    member this.two
-        with get () =
-            let selectedToken = jtoken.["two"]
-            selectedToken.ToObject<string> serializer
-        and set (newValue: string) =
-            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
+        member this.two
+            with get () =
+                let selectedToken = jtoken.["two"]
+                selectedToken.ToObject<string> serializer
+            and set (newValue: string) =
+                jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
-    member this.three
-        with get () =
-            let selectedToken = jtoken.["three"]
-            selectedToken.ToObject<System.Guid> serializer
-        and set (newValue: System.Guid) =
-            jtoken.["three"] <- JToken.FromObject(newValue, serializer)
+        member this.three
+            with get () =
+                let selectedToken = jtoken.["three"]
+                selectedToken.ToObject<System.Guid> serializer
+            and set (newValue: System.Guid) =
+                jtoken.["three"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outone: outref<int>, outtwo: outref<string>, outthree: outref<System.Guid>) =
-        outone <- this.one
-        outtwo <- this.two
-        outthree <- this.three
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outone: outref<int>, outtwo: outref<string>, outthree: outref<System.Guid>) =
+            outone <- this.one
+            outtwo <- this.two
+            outthree <- this.three
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
-type DifferentBackingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
-    member this.one
-        with get () =
-            let selectedToken = jtoken.["not_one"]
-            selectedToken.ToObject<int> serializer
-        and set (newValue: int) =
-            jtoken.["not_one"] <- JToken.FromObject(newValue, serializer)
+    type DifferentBackingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
+        member this.one
+            with get () =
+                let selectedToken = jtoken.["not_one"]
+                selectedToken.ToObject<int> serializer
+            and set (newValue: int) =
+                jtoken.["not_one"] <- JToken.FromObject(newValue, serializer)
 
-    member this.two
-        with get () =
-            let selectedToken = jtoken.["two"]
-            selectedToken.ToObject<int> serializer
-        and set (newValue: int) =
-            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
+        member this.two
+            with get () =
+                let selectedToken = jtoken.["two"]
+                selectedToken.ToObject<int> serializer
+            and set (newValue: int) =
+                jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outone: outref<int>, outtwo: outref<int>) =
-        outone <- this.one
-        outtwo <- this.two
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outone: outref<int>, outtwo: outref<int>) =
+            outone <- this.one
+            outtwo <- this.two
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
-type NullableFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
-    member this.one
-        with get () =
-            let selectedToken = jtoken.["one"]
-            selectedToken.ToObject<System.Nullable<int>> serializer
-        and set (newValue: System.Nullable<int>) =
-            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
+    type NullableFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
+        member this.one
+            with get () =
+                let selectedToken = jtoken.["one"]
+                selectedToken.ToObject<System.Nullable<int>> serializer
+            and set (newValue: System.Nullable<int>) =
+                jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
-    member this.two
-        with get () =
-            let selectedToken = jtoken.["two"]
-            selectedToken.ToObject<string> serializer
-        and set (newValue: string) =
-            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
+        member this.two
+            with get () =
+                let selectedToken = jtoken.["two"]
+                selectedToken.ToObject<string> serializer
+            and set (newValue: string) =
+                jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<string>) =
-        outone <- this.one
-        outtwo <- this.two
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<string>) =
+            outone <- this.one
+            outtwo <- this.two
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
-type NullableMissingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
-    member this.one
-        with get () =
-            let selectedToken = jtoken.["one"]
-            if isNull selectedToken
-            then MissingJsonFieldException("one", jtoken) |> raise
-            selectedToken.ToObject<System.Nullable<int>> serializer
-        and set (newValue: System.Nullable<int>) =
-            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
+    type NullableMissingFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
+        member this.one
+            with get () =
+                let selectedToken = jtoken.["one"]
+                if isNull selectedToken
+                then MissingJsonFieldException("one", jtoken) |> raise
+                selectedToken.ToObject<System.Nullable<int>> serializer
+            and set (newValue: System.Nullable<int>) =
+                jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
-    member this.two
-        with get () =
-            let selectedToken = jtoken.["two"]
-            selectedToken.ToObject<int> serializer
-        and set (newValue: int) =
-            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
+        member this.two
+            with get () =
+                let selectedToken = jtoken.["two"]
+                selectedToken.ToObject<int> serializer
+            and set (newValue: int) =
+                jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<int>) =
-        outone <- this.one
-        outtwo <- this.two
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outone: outref<System.Nullable<int>>, outtwo: outref<int>) =
+            outone <- this.one
+            outtwo <- this.two
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
-type OptionalFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
-    member this.one
-        with get () =
-            let selectedToken = jtoken.["one"]
-            selectedToken.ToObject<int option> serializer
-        and set (newValue: int option) =
-            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
+    type OptionalFieldSchema(jtoken: JToken, serializer: JsonSerializer) =
+        member this.one
+            with get () =
+                let selectedToken = jtoken.["one"]
+                selectedToken.ToObject<int option> serializer
+            and set (newValue: int option) =
+                jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
-    member this.two
-        with get () =
-            let selectedToken = jtoken.["two"]
-            selectedToken.ToObject<int> serializer
-        and set (newValue: int) =
-            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
+        member this.two
+            with get () =
+                let selectedToken = jtoken.["two"]
+                selectedToken.ToObject<int> serializer
+            and set (newValue: int) =
+                jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outone: outref<int option>, outtwo: outref<int>) =
-        outone <- this.one
-        outtwo <- this.two
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outone: outref<int option>, outtwo: outref<int>) =
+            outone <- this.one
+            outtwo <- this.two
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
-type InnerType(jtoken: JToken, serializer: JsonSerializer) =
-    member this.one
-        with get () =
-            let selectedToken = jtoken.["one"]
-            selectedToken.ToObject<int option> serializer
-        and set (newValue: int option) =
-            jtoken.["one"] <- JToken.FromObject(newValue, serializer)
+    type InnerType(jtoken: JToken, serializer: JsonSerializer) =
+        member this.one
+            with get () =
+                let selectedToken = jtoken.["one"]
+                selectedToken.ToObject<int option> serializer
+            and set (newValue: int option) =
+                jtoken.["one"] <- JToken.FromObject(newValue, serializer)
 
-    member this.two
-        with get () =
-            let selectedToken = jtoken.["two"]
-            selectedToken.ToObject<string> serializer
-        and set (newValue: string) =
-            jtoken.["two"] <- JToken.FromObject(newValue, serializer)
+        member this.two
+            with get () =
+                let selectedToken = jtoken.["two"]
+                selectedToken.ToObject<string> serializer
+            and set (newValue: string) =
+                jtoken.["two"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outone: outref<int option>, outtwo: outref<string>) =
-        outone <- this.one
-        outtwo <- this.two
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outone: outref<int option>, outtwo: outref<string>) =
+            outone <- this.one
+            outtwo <- this.two
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
-type OuterType(jtoken: JToken, serializer: JsonSerializer) =
-    member this.foo
-        with get () =
-            let selectedToken = jtoken.["foo"]
-            selectedToken.ToObject<InnerType> serializer
-        and set (newValue: InnerType) =
-            jtoken.["foo"] <- JToken.FromObject(newValue, serializer)
+    type OuterType(jtoken: JToken, serializer: JsonSerializer) =
+        member this.foo
+            with get () =
+                let selectedToken = jtoken.["foo"]
+                selectedToken.ToObject<InnerType> serializer
+            and set (newValue: InnerType) =
+                jtoken.["foo"] <- JToken.FromObject(newValue, serializer)
 
-    member this.count
-        with get () =
-            let selectedToken = jtoken.["count"]
-            selectedToken.ToObject<int> serializer
-        and set (newValue: int) =
-            jtoken.["count"] <- JToken.FromObject(newValue, serializer)
+        member this.count
+            with get () =
+                let selectedToken = jtoken.["count"]
+                selectedToken.ToObject<int> serializer
+            and set (newValue: int) =
+                jtoken.["count"] <- JToken.FromObject(newValue, serializer)
 
-    override this.GetHashCode () = jtoken.GetHashCode()
+        override this.GetHashCode () = jtoken.GetHashCode()
 
-    override this.Equals(objToCompare: obj) =
-        match objToCompare with
-        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
-        | _ -> false
+        override this.Equals(objToCompare: obj) =
+            match objToCompare with
+            | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+            | _ -> false
 
-    ///This allows the class to be pattern matched against
-    member this.Deconstruct(outfoo: outref<int option * string>, outcount: outref<int>) =
-        outfoo <- this.foo.Deconstruct()
-        outcount <- this.count
+        ///This allows the class to be pattern matched against
+        member this.Deconstruct(outfoo: outref<int option * string>, outcount: outref<int>) =
+            outfoo <- this.foo.Deconstruct()
+            outcount <- this.count
 
-    interface IHaveJToken with
-        override this.InnerData = jtoken
+        interface IHaveJToken with
+            override this.InnerData = jtoken
 
+    module Nested =
+        module OneThing =
+            type Data(jtoken: JToken, serializer: JsonSerializer) =
+                member this.Foo
+                    with get () =
+                        let selectedToken = jtoken.["Foo"]
+                        selectedToken.ToObject<string> serializer
+                    and set (newValue: string) =
+                        jtoken.["Foo"] <- JToken.FromObject(newValue, serializer)
+
+                override this.GetHashCode () = jtoken.GetHashCode()
+
+                override this.Equals(objToCompare: obj) =
+                    match objToCompare with
+                    | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+                    | _ -> false
+
+                ///This allows the class to be pattern matched against
+                member this.Deconstruct(outFoo: outref<string>) = outFoo <- this.Foo
+
+                interface IHaveJToken with
+                    override this.InnerData = jtoken
+
+            type Data2(jtoken: JToken, serializer: JsonSerializer) =
+                member this.Foo
+                    with get () =
+                        let selectedToken = jtoken.["Foo"]
+                        selectedToken.ToObject<string> serializer
+                    and set (newValue: string) =
+                        jtoken.["Foo"] <- JToken.FromObject(newValue, serializer)
+
+                member this.Another
+                    with get () =
+                        let selectedToken = jtoken.["Another"]
+                        selectedToken.ToObject<Data> serializer
+                    and set (newValue: Data) =
+                        jtoken.["Another"] <- JToken.FromObject(newValue, serializer)
+
+                override this.GetHashCode () = jtoken.GetHashCode()
+
+                override this.Equals(objToCompare: obj) =
+                    match objToCompare with
+                    | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+                    | _ -> false
+
+                ///This allows the class to be pattern matched against
+                member this.Deconstruct(outFoo: outref<string>, outAnother: outref<string>) =
+                    outFoo <- this.Foo
+                    outAnother <- this.Another.Deconstruct()
+
+                interface IHaveJToken with
+                    override this.InnerData = jtoken
+
+        module TwoThing =
+            type Data3(jtoken: JToken, serializer: JsonSerializer) =
+                member this.Bar
+                    with get () =
+                        let selectedToken = jtoken.["Bar"]
+                        selectedToken.ToObject<string> serializer
+                    and set (newValue: string) =
+                        jtoken.["Bar"] <- JToken.FromObject(newValue, serializer)
+
+                member this.Another
+                    with get () =
+                        let selectedToken = jtoken.["Another"]
+                        selectedToken.ToObject<OneThing.Data> serializer
+                    and set (newValue: OneThing.Data) =
+                        jtoken.["Another"] <- JToken.FromObject(newValue, serializer)
+
+                override this.GetHashCode () = jtoken.GetHashCode()
+
+                override this.Equals(objToCompare: obj) =
+                    match objToCompare with
+                    | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+                    | _ -> false
+
+                ///This allows the class to be pattern matched against
+                member this.Deconstruct(outBar: outref<string>, outAnother: outref<OneThing.Data>) =
+                    outBar <- this.Bar
+                    outAnother <- this.Another
+
+                interface IHaveJToken with
+                    override this.InnerData = jtoken

@@ -54,20 +54,20 @@ type OuterType = {
     count : int
 }
 
-// module Nested =
-//     module OneThing =
-//         [<Generator.JsonWrapper>]
-//         type Data = {
-//             Foo : string
-//         }
-//         [<Generator.JsonWrapper>]
-//         type Data2 = {
-//             Foo : string
-//             Another : Data
-//         }
-//     module TwoThing =
-//         [<Generator.JsonWrapper>]
-//         type Data = {
-//             Bar : string
-//             Another : OneThing.Data
-//         }
+module Nested =
+    module OneThing =
+        [<Generator.JsonWrapper>]
+        type Data = {
+            Foo : string
+        }
+        [<Generator.JsonWrapper>]
+        type Data2 = {
+            Foo : string
+            Another : Data
+        }
+    module TwoThing =
+        [<Generator.JsonWrapper>]
+        type Data3 = {
+            Bar : string
+            Another : OneThing.Data
+        }
