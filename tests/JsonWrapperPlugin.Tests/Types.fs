@@ -1,7 +1,5 @@
 namespace Example
-open System
 open Myriad.Plugins
-open Newtonsoft.Json.Linq
 open  Newtonsoft.Json
 open BinaryDefense.JsonWrapper.Core
 
@@ -17,6 +15,7 @@ type SimpleSchema = {
 
 [<Generator.JsonWrapper>]
 type DifferentBackingFieldSchema = {
+    //TODO: Support consts: https://github.com/MoiraeSoftware/myriad/issues/44
     // [<JsonProperty(consts.not_one)>]
     [<JsonProperty("not_one")>]
     one: int
@@ -67,6 +66,14 @@ module Nested =
             Foo : string
             Another : Data
         }
+        module MORE =
+
+            [<Generator.JsonWrapper>]
+            type Data2 = {
+                Foo : string
+                Bar : System.DateTimeOffset
+            }
+
     module TwoThing =
         [<Generator.JsonWrapper>]
         type Data = {
@@ -76,5 +83,20 @@ module Nested =
         type Data2 = {
             Bar : string
             Another : OneThing.Data
+            MORE : OneThing.MORE.Data2
             Another22 : Data
+        }
+
+
+// Modules without the attribute should not be in our end result
+module Mixed =
+
+    module Foo =
+        [<Generator.JsonWrapper>]
+        type Hello = {
+            Foo : string
+        }
+    module Bar =
+        type Bye = {
+            Bar : string
         }

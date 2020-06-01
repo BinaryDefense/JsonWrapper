@@ -232,24 +232,6 @@ let traversalTests =
     ]
 
 
-open FSharp.Compiler.SyntaxTree
-open FsAst
-
-let rec flatten (modules : ModuleTree list) =
-    modules
-    |> List.collect(fun m ->
-        [
-            yield m
-            yield!
-                match m with
-                | Module(_, ms) ->
-                    flatten ms
-                | Class _ ->
-                    []
-        ]
-    )
-
-
 // search tags: debug, debugger, attach
 module Debugging =
   let waitForDebuggerAttached (programName) =
@@ -262,21 +244,6 @@ module Debugging =
 #else
     ()
 #endif
-
-
-let rec filter predicate (modules : ModuleTree list) =
-    modules
-    |> flatten
-    |> List.filter(predicate)
-
-let filterModuleByName name (modules : ModuleTree list)  =
-    let predicate ``module`` =
-        match ``module`` with
-        | Module(s, _) -> s = name
-        | Class _ -> false
-    filter predicate modules
-    |> Seq.tryHead
-
 
 
 // let createSynTypeDefn () =

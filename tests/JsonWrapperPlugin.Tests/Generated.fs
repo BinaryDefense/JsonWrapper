@@ -282,6 +282,37 @@ module Example =
                 interface IHaveJToken with
                     override this.InnerData = jtoken
 
+            module MORE =
+                type Data2(jtoken: JToken, serializer: JsonSerializer) =
+                    member this.Foo
+                        with get () =
+                            let selectedToken = jtoken.["Foo"]
+                            selectedToken.ToObject<string> serializer
+                        and set (newValue: string) =
+                            jtoken.["Foo"] <- JToken.FromObject(newValue, serializer)
+
+                    member this.Bar
+                        with get () =
+                            let selectedToken = jtoken.["Bar"]
+                            selectedToken.ToObject<System.DateTimeOffset> serializer
+                        and set (newValue: System.DateTimeOffset) =
+                            jtoken.["Bar"] <- JToken.FromObject(newValue, serializer)
+
+                    override this.GetHashCode () = jtoken.GetHashCode()
+
+                    override this.Equals(objToCompare: obj) =
+                        match objToCompare with
+                        | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+                        | _ -> false
+
+                    ///This allows the class to be pattern matched against
+                    member this.Deconstruct(outFoo: outref<_>, outBar: outref<_>) =
+                        outFoo <- this.Foo
+                        outBar <- this.Bar
+
+                    interface IHaveJToken with
+                        override this.InnerData = jtoken
+
         module TwoThing =
             type Data(jtoken: JToken, serializer: JsonSerializer) =
                 member this.Fee
@@ -319,6 +350,13 @@ module Example =
                     and set (newValue: OneThing.Data) =
                         jtoken.["Another"] <- JToken.FromObject(newValue, serializer)
 
+                member this.MORE
+                    with get () =
+                        let selectedToken = jtoken.["MORE"]
+                        selectedToken.ToObject<OneThing.MORE.Data2> serializer
+                    and set (newValue: OneThing.MORE.Data2) =
+                        jtoken.["MORE"] <- JToken.FromObject(newValue, serializer)
+
                 member this.Another22
                     with get () =
                         let selectedToken = jtoken.["Another22"]
@@ -334,10 +372,39 @@ module Example =
                     | _ -> false
 
                 ///This allows the class to be pattern matched against
-                member this.Deconstruct(outBar: outref<_>, outAnother: outref<_>, outAnother22: outref<_>) =
+                member this.Deconstruct(
+                    outBar: outref<_>,
+                    outAnother: outref<_>,
+                    outMORE: outref<_>,
+                    outAnother22: outref<_>)
+                    =
                     outBar <- this.Bar
                     outAnother <- this.Another.Deconstruct()
+                    outMORE <- this.MORE.Deconstruct()
                     outAnother22 <- this.Another22.Deconstruct()
+
+                interface IHaveJToken with
+                    override this.InnerData = jtoken
+
+    module Mixed =
+        module Foo =
+            type Hello(jtoken: JToken, serializer: JsonSerializer) =
+                member this.Foo
+                    with get () =
+                        let selectedToken = jtoken.["Foo"]
+                        selectedToken.ToObject<string> serializer
+                    and set (newValue: string) =
+                        jtoken.["Foo"] <- JToken.FromObject(newValue, serializer)
+
+                override this.GetHashCode () = jtoken.GetHashCode()
+
+                override this.Equals(objToCompare: obj) =
+                    match objToCompare with
+                    | :? IHaveJToken as jTokenToCompare -> JToken.DeepEquals(jTokenToCompare.InnerData, jtoken)
+                    | _ -> false
+
+                ///This allows the class to be pattern matched against
+                member this.Deconstruct(outFoo: outref<_>) = outFoo <- this.Foo
 
                 interface IHaveJToken with
                     override this.InnerData = jtoken

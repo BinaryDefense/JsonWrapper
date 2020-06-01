@@ -32,7 +32,8 @@ module Reflection =
 [<AutoOpen>]
 module FsAsts =
     type SynExpr with
-        static member Unit = SynExpr.CreateConst SynConst.Unit
+        static member Unit =
+            SynExpr.CreateConst SynConst.Unit
         static member CreateLongIdent id =
             SynExpr.LongIdent(false, id, None, range0)
 
@@ -141,6 +142,7 @@ module FSharpCore =
     let isNull ident =
         SynExpr.CreateApp(SynExpr.CreateIdent isNullIdent , SynExpr.CreateIdent ident )
 
+
 module JToken =
     let ``namespace`` = typeof<JToken>.Namespace
     let name = typeof<JToken>.Name
@@ -243,6 +245,7 @@ module ModuleTree =
             let pathParts = moduleIdent |> List.map(fun i -> i.idText)
             addPath (moduleIdent, synTypeDefns) pathParts state
         )
+
 
 
 module internal Create =
@@ -607,19 +610,36 @@ type JsonWrapperGenerator() =
 
     interface IMyriadGenerator with
         member __.Generate(namespace', ast: ParsedInput) =
-            let namespaceAndrecords =
-                Ast.extractRecords ast
-                |> List.map((fun (ident, records) -> String.Join('.', ident), records))
+            let findRecordsByOurMarkerAttribute xs =
+                xs
+                |> List.map(fun (ident, rcds) ->
+                    ident, rcds |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
+                )
+
+            let groupRecordsByNamespace xs =
+                xs
+                |> List.map((fun (ident : LongIdent, records) -> String.Join('.', ident), records))
                 |> List.groupBy(fst)
                 |> List.map(fun (key, (xs)) ->
                     Ident.CreateLong(key), xs |> List.collect(snd)
                 )
 
+            let filterOutEmptyModules xs =
+                xs
+                |> List.choose(fun (ident,records) ->
+                    match records with
+                    | [] -> None
+                    | _ -> Some(ident,records)
+                )
+
+            let namespaceAndrecords =
+                Ast.extractRecords ast
+                |> findRecordsByOurMarkerAttribute
+                |> groupRecordsByNamespace
+                |> filterOutEmptyModules
+
             let moduleTrie =
                 namespaceAndrecords
-                |> List.map(fun (key, rcds) ->
-                    key, rcds |> List.filter (Ast.hasAttribute<Generator.JsonWrapperAttribute>)
-                )
                 |> ModuleTree.fromExtractRecords
 
             let rec createModulesAndClasses (moduleTree) =
@@ -652,7 +672,6 @@ type JsonWrapperGenerator() =
                         Declarations = [
                                 yield! openNamespaces
                                 yield! createModulesAndClasses moduleTrie
-                                // yield! classes
                             ] }
 
             namespaceOrModule

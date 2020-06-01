@@ -21,7 +21,7 @@ NUGET
     Expecto (8.13.1)
       FSharp.Core (>= 4.3.4) - restriction: || (>= net461) (>= netstandard2.0)
       Mono.Cecil (>= 0.11) - restriction: || (>= net461) (>= netstandard2.0)
-    Fantomas (4.0.0-alpha-005) - restriction: >= netstandard2.1
+    Fantomas (4.0.0-alpha-006)
       FSharp.Compiler.Service (>= 35.0) - restriction: >= netstandard2.0
       FSharp.Core (>= 4.7.1) - restriction: >= netstandard2.0
     FsAst (0.3) - restriction: >= netstandard2.1
