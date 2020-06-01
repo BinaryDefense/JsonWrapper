@@ -39,6 +39,13 @@ module FsAsts =
 
 module DSL =
 
+    let hashDirective (parsedHashDirective : ParsedHashDirective) =
+        SynModuleDecl.HashDirective (parsedHashDirective, range0)
+
+    let noWarn args =
+        ParsedHashDirective("nowarn", args, range0 )
+        |> hashDirective
+
     /// Creates : open {{namespace}}
     let openNamespace (``namespace`` : LongIdentWithDots) =
         SynModuleDecl.CreateOpen (``namespace``)
@@ -142,6 +149,9 @@ module FSharpCore =
     let isNull ident =
         SynExpr.CreateApp(SynExpr.CreateIdent isNullIdent , SynExpr.CreateIdent ident )
 
+
+module System =
+    let ``namespace`` = typeof<DateTimeOffset>.Namespace
 
 module JToken =
     let ``namespace`` = typeof<JToken>.Namespace
@@ -660,6 +670,8 @@ type JsonWrapperGenerator() =
 
 
             let openNamespaces = [
+                DSL.noWarn ["0058"] //TODO: https://github.com/BinaryDefense/JsonWrapper/issues/2
+                DSL.openNamespace (LongIdentWithDots.CreateString (System.``namespace``) )
                 DSL.openNamespace (LongIdentWithDots.CreateString (JToken.``namespace``) )
                 DSL.openNamespace (LongIdentWithDots.CreateString (typeof<JsonSerializer>.Namespace) )
                 DSL.openNamespace (LongIdentWithDots.CreateString (IHaveJToken.``namespace``) )

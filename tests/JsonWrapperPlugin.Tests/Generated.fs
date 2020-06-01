@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 namespace rec DataSchema
 
+#nowarn "0058"
+open System
 open Newtonsoft.Json.Linq
 open Newtonsoft.Json
 open BinaryDefense.JsonWrapper.Core
