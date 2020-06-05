@@ -2,7 +2,7 @@ source https://www.nuget.org/api/v2
 source https://api.nuget.org/v3/index.json
 storage: none
 clitool dotnet-mono 0.5.2
-nuget FSharp.Core 4.7.1
+nuget FSharp.Core
 nuget Microsoft.SourceLink.GitHub prerelease copy_local: true
 nuget Microsoft.NETFramework.ReferenceAssemblies copy_local: true
 nuget Expecto 8.13.1
@@ -10,8 +10,8 @@ nuget Fantomas 4.0.0-alpha-006
 nuget YoloDev.Expecto.TestSdk 0.8.0
 nuget Microsoft.NET.Test.Sdk 15.7.2
 nuget altcover ~> 6
-nuget Myriad.Core
-nuget Myriad.Sdk
+nuget Myriad.Core 0.2.8
+nuget Myriad.Sdk 0.2.8
 nuget Newtonsoft.Json
 nuget fsharp.compiler.service
 github baronfel/Newtonsoft.Json.FSharp.Idiomatic src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs

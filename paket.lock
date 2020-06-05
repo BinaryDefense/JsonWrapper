@@ -24,8 +24,8 @@ NUGET
     Fantomas (4.0.0-alpha-006)
       FSharp.Compiler.Service (>= 35.0) - restriction: >= netstandard2.0
       FSharp.Core (>= 4.7.1) - restriction: >= netstandard2.0
-    FsAst (0.3) - restriction: >= netstandard2.1
-      Fantomas (>= 4.0.0-alpha-005) - restriction: >= netstandard2.0
+    FsAst (0.5) - restriction: >= netstandard2.1
+      Fantomas (>= 4.0.0-alpha-006) - restriction: >= netstandard2.0
       Microsoft.SourceLink.GitHub (>= 1.0) - restriction: >= netstandard2.0
     FSharp.Compiler.Service (35.0)
       FSharp.Core (>= 4.6.2) - restriction: || (>= net461) (>= netstandard2.0)
@@ -37,7 +37,7 @@ NUGET
       System.Reflection.TypeExtensions (>= 4.3) - restriction: && (< net461) (>= netstandard2.0)
       System.Runtime.Loader (>= 4.0) - restriction: && (< net461) (>= netstandard2.0)
       System.ValueTuple (>= 4.4) - restriction: >= net461
-    FSharp.Core (4.7.1)
+    FSharp.Core (4.7.2)
     Microsoft.Build (16.5) - restriction: >= netcoreapp1.0
       Microsoft.Build.Framework (>= 16.5) - restriction: || (>= net472) (>= netcoreapp2.1)
       Microsoft.Win32.Registry (>= 4.3) - restriction: >= netcoreapp2.1
@@ -127,11 +127,11 @@ NUGET
     Microsoft.Win32.SystemEvents (4.7) - restriction: >= netcoreapp3.0
       Microsoft.NETCore.Platforms (>= 3.1) - restriction: >= netcoreapp2.0
     Mono.Cecil (0.11.2) - restriction: || (>= net461) (>= netstandard2.0)
-    Myriad.Core (0.2.7)
-      FsAst (>= 0.3) - restriction: >= netstandard2.1
+    Myriad.Core (0.2.8)
+      FsAst (>= 0.5) - restriction: >= netstandard2.1
       FSharp.Compiler.Service (>= 35.0) - restriction: >= netstandard2.1
-      FSharp.Core (>= 4.7.1) - restriction: >= netstandard2.1
-    Myriad.Sdk (0.2.7)
+      FSharp.Core (>= 4.7.2) - restriction: >= netstandard2.1
+    Myriad.Sdk (0.2.8)
     NETStandard.Library (2.0.3) - restriction: || (&& (< net20) (>= netstandard1.0) (< netstandard1.3)) (&& (< net20) (>= netstandard1.3) (< netstandard2.0)) (>= netcoreapp1.0) (&& (>= netcoreapp5.0) (< netstandard1.3)) (&& (>= netcoreapp5.0) (< netstandard2.0))
       Microsoft.NETCore.Platforms (>= 1.1) - restriction: || (&& (>= net45) (< netstandard1.3)) (&& (< net45) (>= netstandard1.1) (< netstandard1.2) (< win8)) (&& (< net45) (>= netstandard1.2) (< netstandard1.3) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.3) (< netstandard1.4) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.4) (< netstandard1.5) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.5) (< netstandard1.6) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.6) (< netstandard2.0) (< win8) (< wpa81)) (&& (< net45) (>= netstandard2.0)) (&& (>= net46) (< netstandard1.4)) (>= net461) (>= netcoreapp2.0) (&& (>= netstandard1.0) (< portable-net45+win8+wpa81)) (&& (< netstandard1.0) (>= portable-net45+win8) (< win8)) (&& (< netstandard1.0) (< portable-net45+win8) (>= portable-net45+win8+wpa81)) (&& (< netstandard1.0) (>= portable-net45+win8+wp8+wpa81) (< portable-net45+win8+wpa81)) (&& (< netstandard1.0) (>= win8)) (&& (< netstandard1.3) (< win8) (>= wpa81)) (&& (< netstandard1.5) (>= uap10.0)) (>= uap10.1) (>= wp8)
       Microsoft.Win32.Primitives (>= 4.3) - restriction: || (&& (< net45) (>= netstandard1.3) (< netstandard1.4) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.4) (< netstandard1.5) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.5) (< netstandard1.6) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.6) (< netstandard2.0) (< win8) (< wpa81)) (&& (>= net46) (< netstandard1.4)) (&& (< netstandard1.5) (>= uap10.0) (< uap10.1))

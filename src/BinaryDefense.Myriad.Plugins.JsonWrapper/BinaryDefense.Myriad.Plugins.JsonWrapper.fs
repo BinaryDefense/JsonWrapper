@@ -29,13 +29,6 @@ module Reflection =
         | Lambda (_, Call (_, mi, _)) -> mi.Name
         | _ -> failwith "%A is not a valid getMethodName expression, expected Lamba(_ Call(_, _, _))"
 
-[<AutoOpen>]
-module FsAsts =
-    type SynExpr with
-        static member Unit =
-            SynExpr.CreateConst SynConst.Unit
-        static member CreateLongIdent id =
-            SynExpr.LongIdent(false, id, None, range0)
 
 module DSL =
 
@@ -54,15 +47,6 @@ module DSL =
     let createTypleSynType args =
         SynType.Tuple(false, args |> List.map(fun s -> false,s), range0)
 
-    /// Creates : match {{matchCheck}} with | {{clause1}} | {{clause2}} ... | {{clauseN}}
-    let createMatch matchCheck clauses =
-        SynExpr.Match(DebugPointForBinding.DebugPointAtBinding range0, matchCheck, clauses, range0)
-
-    /// Creates : (arg1, arg2... argN0)
-    let createParenedTuple args =
-        SynExpr.CreateTuple args
-        |> SynExpr.CreateParen
-
     /// Creates : if {{ifCheck}} then {{ifbody}} else {{elseBody}}
     let createIfThenElse ifCheck ifBody elseBody =
         SynExpr.IfThenElse(ifCheck, ifBody, elseBody, DebugPointForBinding.DebugPointAtBinding range0, false, range0, range0)
@@ -76,38 +60,6 @@ module DSL =
         let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
         SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
-    /// Creates type MyClass({{ctorArgs}})
-    let createCtor (ctorArgs : SynSimplePat list) =
-        let ctorArgs = SynSimplePats.SimplePats(ctorArgs, range0)
-        SynMemberDefn.ImplicitCtor(None, [], ctorArgs, None, range.Zero )
-
-    /// Creates {{ident}} : {{ty}}
-    ///
-    /// A more concrete example : jtoken : JToken
-    let createTypedCtorArg ident ``type`` =
-        let ssp = SynSimplePat.Id(ident, None, false, false, false, range.Zero)
-        SynSimplePat.Typed(ssp, ``type``, range.Zero )
-
-    /// Creates : instanceAndMethod(args)
-    let createInstanceMethodCall instanceAndMethod args =
-        let valueExpr = SynExpr.CreateLongIdent instanceAndMethod
-        SynExpr.CreateApp(valueExpr, args)
-
-    /// Creates : instanceAndMethod()
-    let createInstanceMethodCallUnit instanceAndMethod =
-        createInstanceMethodCall instanceAndMethod SynExpr.Unit
-
-    /// Creates {{instanceAndMethod}}<{{types}}>({{args}})
-    ///
-    /// A more concrete example would be jtoken.ToObject<int>(serializer)
-    let createGenericInstanceMethodCall instanceAndMethod types args =
-        //Generates the methodCall {jtoken}.ToObject
-        let valueExpr = SynExpr.CreateLongIdent instanceAndMethod
-        //Generates the Generic part of {jtoken}.ToObject<mytype>
-        let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, types, [], None, range0, range0 )
-        //Generates the function call {jtoken}.ToObject<mytype>(serializer)
-        SynExpr.CreateApp(valueExprWithType, args)
-
 
     let private pipeRightIdent = Ident.Create "op_PipeRight"
 
@@ -115,25 +67,6 @@ module DSL =
     let pipeRight synExpr2 synExpr1 =
         SynExpr.CreateApp(SynExpr.CreateAppInfix(SynExpr.CreateIdent pipeRightIdent, synExpr1), synExpr2)
 
-    /// Creates: expr1; expr2; ... exprN
-    let sequentialExpressions exprs =
-        let seqExpr expr1 expr2 = SynExpr.Sequential(DebugPointAtSequential.Both, false, expr1, expr2, range0)
-        let rec inner exprs state =
-            match state, exprs with
-            | None, [] -> SynExpr.CreateConst SynConst.Unit
-            | Some expr, [] -> expr
-            | None, [single] -> single
-            | None, [one;two] -> seqExpr one two
-            | Some exp, [single] -> seqExpr exp single
-            | None, head::shoulders::tail ->
-                seqExpr head shoulders
-                |> Some
-                |> inner tail
-            | Some expr, head::tail ->
-                seqExpr expr head
-                |> Some
-                |> inner tail
-        inner exprs None
 
 module SystemObject =
     let getHashCodeMethod =
@@ -164,7 +97,7 @@ module JToken =
     let instanceToObject (instance : Ident) (generic : SynType) (serializer : Ident) =
         let instanceAndMethod =  LongIdentWithDots.Create [instance.idText; toObjectMethod]
         let args =  SynExpr.CreateIdent serializer
-        DSL.createGenericInstanceMethodCall instanceAndMethod [generic] args
+        SynExpr.CreateInstanceMethodCall(instanceAndMethod, [generic], args)
 
 
     let private fromObjectMethod =
@@ -173,18 +106,18 @@ module JToken =
     let staticFromObject jtoken serializer =
         let instanceAndMethod =  LongIdentWithDots.Create [name; fromObjectMethod]
         let args =
-            DSL.createParenedTuple [
+            SynExpr.CreateParenedTuple [
                 SynExpr.CreateIdent jtoken
                 SynExpr.CreateIdent serializer
             ]
-        DSL.createInstanceMethodCall instanceAndMethod args
+        SynExpr.CreateInstanceMethodCall(instanceAndMethod, args)
 
     let private getHashCodeMethod =
         Reflection.methodName <@ fun (x : JToken) -> x.GetHashCode() @>
 
     let instanceGetHashCode (instance : Ident) =
         let instanceAndMethod =  LongIdentWithDots.Create [instance.idText; getHashCodeMethod]
-        DSL.createInstanceMethodCallUnit instanceAndMethod
+        SynExpr.CreateInstanceMethodCall instanceAndMethod
 
     let private deepEqualsMethod =
         nameof JToken.DeepEquals
@@ -197,7 +130,7 @@ module JToken =
                     deepEqualsMethod
                 ]
             )
-        let deepEqualArgs = DSL.createParenedTuple [arg1; arg2]
+        let deepEqualArgs = SynExpr.CreateParenedTuple [arg1; arg2]
         SynExpr.CreateApp(deepEqualFunc, deepEqualArgs)
 
 module IHaveJToken =
@@ -222,7 +155,7 @@ module MissingJsonFieldException =
 
     let ctor fieldName jtoken =
         let func = SynExpr.CreateLongIdent nameLongIdent
-        let args = DSL.createParenedTuple [fieldName; jtoken]
+        let args = SynExpr.CreateParenedTuple [fieldName; jtoken]
         SynExpr.CreateApp(func, args)
 
 type ModuleTree =
@@ -284,9 +217,9 @@ module internal Create =
 
 
         let createCtor =
-            let jtokenArg = DSL.createTypedCtorArg jtokenIdent (SynType.CreateLongIdent JToken.nameLongIdent)
-            let serializerArg = DSL.createTypedCtorArg jsonSerializerNameIdent (SynType.CreateLongIdent jsonSerializerFullNameLongIdent)
-            DSL.createCtor [jtokenArg; serializerArg;]
+            let jtokenArg = SynSimplePat.CreateTyped(jtokenIdent, (SynType.CreateLongIdent JToken.nameLongIdent))
+            let serializerArg = SynSimplePat.CreateTyped(jsonSerializerNameIdent, (SynType.CreateLongIdent jsonSerializerFullNameLongIdent))
+            SynMemberDefn.CreateImplicitCtor [jtokenArg; serializerArg]
 
         let createGetterSynValdatea  =
             let memberFlags : MemberFlags = {
@@ -331,7 +264,7 @@ module internal Create =
                             createException |> DSL.pipeRight (SynExpr.CreateIdent FSharpCore.raiseIdent)
                         // Generates if isNull {varName} then raise exception
                         let existCheck = DSL.createIfThenElse ifCheck ifBody None
-                        DSL.sequentialExpressions [
+                        SynExpr.CreateSequential [
                             existCheck
                             toObjectCall
                         ]
@@ -456,7 +389,7 @@ module internal Create =
                 let clause2 =
                     SynMatchClause.Clause(SynPat.Wild range0, None, SynExpr.CreateConst (SynConst.Bool(false)), range0, DebugPointForTarget.Yes)
                 let matchCheck = SynExpr.CreateIdent arg1VarNameIdent
-                DSL.createMatch matchCheck [clause1; clause2]
+                SynExpr.CreateMatch(matchCheck, [clause1; clause2])
             let memberFlags : MemberFlags = {
                 IsInstance = true
                 IsDispatchSlot = false
@@ -553,7 +486,7 @@ module internal Create =
                         match getDeconstructType fieldTy with
                         | Some _ ->
                             LongIdentWithDots.Create [selfIden; fieldName; deconstructMethodName ]
-                            |> DSL.createInstanceMethodCallUnit
+                            |> SynExpr.CreateInstanceMethodCall
                         | None -> SynExpr.CreateLongIdent( LongIdentWithDots.Create [selfIden; fieldName ])
 
                     SynExpr.LongIdentSet (LongIdentWithDots.CreateString (outField fieldName), rightside, range0 )
