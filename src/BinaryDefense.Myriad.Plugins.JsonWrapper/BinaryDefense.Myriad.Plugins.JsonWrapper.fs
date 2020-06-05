@@ -491,7 +491,7 @@ module internal Create =
 
                     SynExpr.LongIdentSet (LongIdentWithDots.CreateString (outField fieldName), rightside, range0 )
                 )
-                |> DSL.sequentialExpressions
+                |> SynExpr.CreateSequential
 
             let bindingRecord = {
                     SynBindingRcd.Null with
