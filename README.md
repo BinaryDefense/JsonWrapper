@@ -141,7 +141,7 @@ macOS/Linux | Windows
 
 Package | Stable | Prerelease
 --- | --- | ---
-BinaryDefense.JsonWrapper.Core | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper.Core/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper.Core?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper.Core/)
+BinaryDefense.JsonWrapper.Core | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper.Core)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper.Core/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.JsonWrapper.Core?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.JsonWrapper.Core/)
 BinaryDefense.Myriad.Plugins.JsonWrapper | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.Myriad.Plugins.JsonWrapper)](https://www.nuget.org/packages/BinaryDefense.Myriad.Plugins.JsonWrapper/) | [![NuGet Badge](https://buildstats.info/nuget/BinaryDefense.Myriad.Plugins.JsonWrapper?includePreReleases=true)](https://www.nuget.org/packages/BinaryDefense.Myriad.Plugins.JsonWrapper/)
 
 ---
