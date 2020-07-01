@@ -132,10 +132,12 @@ Additional reading on this topic:
 
 ## Builds
 
-macOS/Linux | Windows
---- | ---
-[![Travis Badge](https://travis-ci.org/BinaryDefense/BinaryDefense.JsonWrapper.svg?branch=master)](https://travis-ci.org/BinaryDefense/BinaryDefense.JsonWrapper) | [![Build status](https://ci.appveyor.com/api/projects/status/github/BinaryDefense/BinaryDefense.JsonWrapper?svg=true)](https://ci.appveyor.com/project/BinaryDefense/BinaryDefense.JsonWrapper)
-[![Build History](https://buildstats.info/travisci/chart/BinaryDefense/BinaryDefense.JsonWrapper)](https://travis-ci.org/BinaryDefense/BinaryDefense.JsonWrapper/builds) | [![Build History](https://buildstats.info/appveyor/chart/BinaryDefense/BinaryDefense.JsonWrapper)](https://ci.appveyor.com/project/BinaryDefense/BinaryDefense.JsonWrapper)  
+GitHub Actions |
+:---: |
+[![GitHub Actions](https://github.com/BinaryDefense/JsonWrapper/workflows/Build%20master/badge.svg)](https://github.com/BinaryDefense/JsonWrapper/actions?query=branch%3Amaster) |
+[![Build History](https://buildstats.info/github/chart/BinaryDefense/JsonWrapper)](https://github.com/BinaryDefense/JsonWrapper/actions?query=branch%3Amaster) |
+
+
 
 ## NuGet 
 
